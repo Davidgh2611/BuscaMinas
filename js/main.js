@@ -30,11 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-hard',   () => startNormalGame(16, 50, false));
     bind('btn-expert', () => startNormalGame(16, 50, true));
     
-    // --- MODO BLITZ ---
-    bind('btn-blitz', () => {
-        console.log("Iniciando Modo Blitz...");
-        Game.startBlitz(10, 15); // Tablero 10x10, 15 minas
-    });
+    // BOTÓN HISTORIAL
+    const btnHist = document.getElementById('btn-history-modal');
+    if (btnHist) {
+        btnHist.onclick = () => UI.renderHistory();
+    }
+    // BOTÓN MODO BLITZ
+    const btnBlitz = document.getElementById('btn-blitz');
+    if (btnBlitz) {
+        btnBlitz.onclick = () => Game.startBlitz(10, 15);
+    }
 
     // --- MODO PERSONALIZADO ---
     bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
