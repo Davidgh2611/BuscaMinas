@@ -91,9 +91,16 @@ function checkWin() {
 function placeMines(sx, sy) {
     let p = 0;
     while (p < state.MINES) {
-        let x = Math.random() * state.SIZE | 0, y = Math.random() * state.SIZE | 0;
-        if (state.board[x][y] === "💣" || (!state.expert && Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1)) continue;
-        state.board[x][y] = "💣"; p++;
+        let x = Math.random() * state.SIZE | 0;
+        let y = Math.random() * state.SIZE | 0;
+
+        // Comprobamos que no haya bomba Y que no esté en el área de 3x3 del clic inicial
+        const isNearFirstClick = Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1;
+        
+        if (state.board[x][y] === "💣" || isNearFirstClick) continue;
+        
+        state.board[x][y] = "💣"; 
+        p++;
     }
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
@@ -128,4 +135,36 @@ function chord(x, y) {
     }
 }
 
-function lose() { state.gameOver = true; clearInterval(state.timer); setTimeout(UI.showLose, 500); }
+function lose(hitX, hitY) {
+    state.gameOver = true;
+    clearInterval(state.timer);
+
+    const mines = [];
+    for (let x = 0; x < state.SIZE; x++) {
+        for (let y = 0; y < state.SIZE; y++) {
+            if (state.board[x][y] === "💣") {
+                // La que pisamos va al principio para que sea la primera en explotar
+                if (x === hitX && y === hitY) mines.unshift({x, y});
+                else mines.push({x, y});
+            }
+        }
+    }
+
+    mines.forEach((m, i) => {
+        // CAMBIO AQUÍ: Multiplicamos el índice por 200 para que sea más lento
+        setTimeout(() => {
+            const index = m.x * state.SIZE + m.y;
+            const cell = state.cellsDOM[index];
+            
+            cell.classList.add('revealed', 'bomb-explosion');
+            cell.textContent = "💣";
+            
+            if (typeof UI.playSound === 'function') UI.playSound('boom');
+
+            // Mostrar el modal cuando explote la ÚLTIMA mina
+            if (i === mines.length - 1) {
+                setTimeout(() => UI.showLose(), 800); // Un poco más de espera al final
+            }
+        }, i * 200); // <--- 200ms es el tiempo entre cada bomba
+    });
+}
