@@ -11,19 +11,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.onclick = fn;
     };
 
-    // --- SISTEMA DE SKINS (Incluye estacionales) ---
+    // --- SISTEMA DE SKINS ---
     bind('skin-clasico', () => UI.setSkin('clasico'));
     bind('skin-moderno', () => UI.setSkin('moderno'));
     bind('skin-minimal', () => UI.setSkin('minimal'));
-    bind('skin-winter', () => UI.setSkin('winter'));    // Nueva skin
-    bind('skin-halloween', () => UI.setSkin('halloween')); // Nueva skin
+    bind('skin-winter', () => UI.setSkin('winter'));
+    bind('skin-halloween', () => UI.setSkin('halloween'));
+    bind('skin-cyberpunk', () => UI.setSkin('cyberpunk')); // Nueva skin Cyberpunk
 
-    // --- DIFICULTADES ---
-    bind('btn-easy',   () => Game.startGame(8, 10, false));
-    bind('btn-medium', () => Game.startGame(12, 25, false));
-    bind('btn-hard',   () => Game.startGame(16, 50, false));
-    bind('btn-expert', () => Game.startGame(16, 50, true));
+    // --- DIFICULTADES (Resetean el modo Blitz) ---
+    const startNormalGame = (s, m, e) => {
+        state.isBlitz = false; // Desactivar Blitz al jugar normal
+        Game.startGame(s, m, e);
+    };
+
+    bind('btn-easy',   () => startNormalGame(8, 10, false));
+    bind('btn-medium', () => startNormalGame(12, 25, false));
+    bind('btn-hard',   () => startNormalGame(16, 50, false));
+    bind('btn-expert', () => startNormalGame(16, 50, true));
     
+    // --- MODO BLITZ ---
+    bind('btn-blitz', () => {
+        console.log("Iniciando Modo Blitz...");
+        Game.startBlitz(10, 15); // Tablero 10x10, 15 minas
+    });
+
     // --- MODO PERSONALIZADO ---
     bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
     bind('btn-start-custom', () => {
@@ -31,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mines = parseInt(document.getElementById('custom-mines').value);
         if (size >= 8 && size <= 30 && mines < size * size) {
             document.getElementById('customModal').style.display = 'none';
+            state.isBlitz = false;
             Game.startGame(size, mines, false);
         } else {
             alert("Configuración no válida (Mínimo 8x8, las minas no pueden superar el tablero)");
@@ -38,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- SISTEMA DE REPLAY ---
-    // Esto conectará cualquier botón que tenga la clase 'btn-replay' o el ID 'btn-replay'
     document.querySelectorAll('.btn-replay, #btn-replay').forEach(btn => {
         btn.onclick = () => UI.runReplay();
     });
@@ -49,30 +61,26 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-stats', UI.renderStats);
     bind('btn-home-game', () => UI.showScreen('menu'));
     
-
-    // Lógica para el Tutorial Rápido
+    // --- TUTORIAL ---
     const tutorialModal = document.getElementById('tutorialModal');
-    const hasSeenTutorial = localStorage.getItem('seenTutorial');
-
-    // Solo mostrar si no lo ha visto antes
-    if (!hasSeenTutorial) {
+    if (tutorialModal && !localStorage.getItem('seenTutorial')) {
         setTimeout(() => {
             tutorialModal.style.display = 'flex';
-        }, 1000); // Aparece un segundo después de cargar para no agobiar
+        }, 1000);
     }
 
     const closeTutorial = () => {
-        tutorialModal.style.display = 'none';
+        if (tutorialModal) tutorialModal.style.display = 'none';
         localStorage.setItem('seenTutorial', 'true');
     };
 
-    document.getElementById('btn-close-tutorial').onclick = closeTutorial;
-    document.querySelector('.close-tutorial').onclick = closeTutorial;
+    bind('btn-close-tutorial', closeTutorial);
+    const closeBtnTutorial = document.querySelector('.close-tutorial');
+    if (closeBtnTutorial) closeBtnTutorial.onclick = closeTutorial;
 
-    // --- BOTONES DINÁMICOS (Restart y Home en modales) ---
+    // --- BOTONES DINÁMICOS (Restart y Home) ---
     document.querySelectorAll('.btn-home').forEach(btn => {
         btn.onclick = () => {
-            // Cerramos modales antes de volver al menú
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
             UI.showScreen('menu');
         };
@@ -81,11 +89,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-restart').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            Game.startGame(state.lastConfig.size, state.lastConfig.mines, state.lastConfig.expert);
+            // Si el anterior era Blitz, reiniciamos Blitz
+            if (state.isBlitz) {
+                Game.startBlitz(state.lastConfig.size, state.lastConfig.mines);
+            } else {
+                Game.startGame(state.lastConfig.size, state.lastConfig.mines, state.lastConfig.expert);
+            }
         };
     });
-
-    // Cerrar cualquier modal con un botón genérico de cerrar
+    
+    // Cerrar modales genéricos
     document.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.onclick = () => btn.closest('.modal').style.display = 'none';
     });
@@ -93,3 +106,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cargar skin inicial guardada
     UI.setSkin(localStorage.getItem("skin") || "moderno");
 });
+

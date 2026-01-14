@@ -8,8 +8,6 @@ export function startGame(size, mines, exp) {
     state.expert = exp;
     state.lastConfig = { size, mines, exp };
     state.cellsRevealedCount = 0;
-    
-    // --- NUEVO: Limpiar historial al empezar ---
     state.history = []; 
     
     state.board = [...Array(size)].map(() => Array(size).fill(0));
@@ -17,39 +15,71 @@ export function startGame(size, mines, exp) {
     state.flagged = [...Array(size)].map(() => Array(size).fill(false));
     state.gameOver = false;
     state.firstClick = true;
-    state.seconds = 0;
     state.flagsUsed = 0;
 
+    // Si no se definió isBlitz en startBlitz, aseguramos que sea falso
+    if (state.isBlitz === undefined) state.isBlitz = false;
+    
+    // Si no es blitz, empezamos desde 0. Si es blitz, startBlitz ya puso 30.
+    if (!state.isBlitz) state.seconds = 0;
+
+    // --- TEMPORIZADOR UNIFICADO ---
     clearInterval(state.timer);
-    state.timer = setInterval(() => { if (!state.gameOver) { state.seconds++; UI.updateDisplay(); } }, 1000);
+    state.timer = setInterval(() => {
+        if (!state.gameOver) {
+            if (state.isBlitz) {
+                state.seconds--;
+                if (state.seconds <= 0) {
+                    state.seconds = 0;
+                    UI.updateDisplay();
+                    lose(-1, -1); 
+                    return;
+                }
+            } else {
+                state.seconds++;
+            }
+            UI.updateDisplay();
+        }
+    }, 1000);
 
     UI.showScreen('game');
     UI.updateDisplay();
     UI.createBoard(size, clickCell, toggleFlag);
 }
 
+export function startBlitz(size, mines) {
+    state.isBlitz = true;
+    state.seconds = 30; // Tiempo inicial de Blitz
+    startGame(size, mines, false);
+}
+
 function clickCell(x, y) {
     if (state.gameOver || state.flagged[x][y]) return;
     if (state.firstClick) { placeMines(x, y); state.firstClick = false; }
     
-    // --- NUEVO: Registrar click en historial ---
     state.history.push({ x, y, type: 'reveal' });
 
     if (state.revealed[x][y]) { chord(x, y); checkWin(); return; }
     reveal(x, y);
     checkWin();
-    UI.createParticles(x, y)
+    UI.createParticles(x, y);
 }
 
 function reveal(x, y) {
     if (state.gameOver || state.revealed[x][y] || state.flagged[x][y]) return;
     state.revealed[x][y] = true;
     state.cellsRevealedCount++;
+
+    // --- Lógica Blitz: Sumar tiempo ---
+    if (state.isBlitz && state.board[x][y] !== "💣") {
+        state.seconds += (state.board[x][y] === 0) ? 2 : 1;
+        UI.updateDisplay();
+    }
+
     if (state.cellsRevealedCount >= 50) Storage.unlockAchievement("survivor", "Superviviente");
     
     UI.renderCell(x, y, state.board[x][y]);
     
-    // Cambiamos "💣" por la detección de icono dinámico
     if (state.board[x][y] === "💣") { lose(x, y); return; }
     
     if (state.board[x][y] === 0 && !state.expert) {
@@ -57,7 +87,6 @@ function reveal(x, y) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
                 if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE) {
-                    // Si el vecino es 0, también lo grabamos para el replay
                     if (!state.revealed[nx][ny]) {
                         state.history.push({ x: nx, y: ny, type: 'reveal' });
                         reveal(nx, ny);
@@ -70,10 +99,7 @@ function reveal(x, y) {
 
 function toggleFlag(x, y) {
     if (state.gameOver || state.revealed[x][y]) return;
-
     const cell = state.cellsDOM[x * state.SIZE + y];
-    
-    // --- NUEVO: Registrar bandera en historial ---
     state.history.push({ x, y, type: 'flag' });
 
     if (!state.flagged[x][y] && cell.textContent !== "❓") {
@@ -87,7 +113,6 @@ function toggleFlag(x, y) {
     } else {
         cell.textContent = "";
     }
-    
     UI.updateDisplay();
 }
 
@@ -105,15 +130,19 @@ function checkWin() {
         clearInterval(state.timer);
         Storage.updateStats('win'); 
 
-        let cat = "easy";
-        if (state.SIZE === 12) cat = "medium";
-        if (state.SIZE === 16) cat = state.expert ? "expert" : "hard";
+        let cat = state.isBlitz ? "blitz" : "easy";
+        if (!state.isBlitz) {
+            if (state.SIZE === 12) cat = "medium";
+            if (state.SIZE === 16) cat = state.expert ? "expert" : "hard";
+        }
 
+        // Guardar en el nuevo historial detallado
+        Storage.saveToHistory({ cat, seconds: state.seconds, win: true });
+        
         Storage.saveScore(cat, state.seconds);
         Storage.unlockAchievement("perfect", "Partida Perfecta");
-        if (state.seconds < 30) Storage.unlockAchievement("speed_demon", "Flash");
+        if (!state.isBlitz && state.seconds < 30) Storage.unlockAchievement("speed_demon", "Flash");
         if (state.flagsUsed === 0) Storage.unlockAchievement("no_flags", "Sin Banderas");
-        Storage.unlockAchievement(cat === "expert" ? "expert" : cat === "hard" ? "hard" : cat === "medium" ? "intermediate" : "beginner", "Victoria en " + cat);
         
         UI.showWin();
     }
@@ -157,7 +186,6 @@ function chord(x, y) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
                 if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE && !state.flagged[nx][ny]) {
-                    // Grabamos cada apertura del chord
                     if (!state.revealed[nx][ny]) {
                         state.history.push({ x: nx, y: ny, type: 'reveal' });
                         reveal(nx, ny);
@@ -173,6 +201,10 @@ function lose(hitX, hitY) {
     clearInterval(state.timer);
     Storage.updateStats('lose', 1); 
 
+    // Guardar derrota en historial
+    let cat = state.isBlitz ? "blitz" : (state.SIZE === 8 ? "easy" : "other");
+    Storage.saveToHistory({ cat, seconds: state.seconds, win: false });
+
     const mines = [];
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
@@ -187,10 +219,10 @@ function lose(hitX, hitY) {
         setTimeout(() => {
             const index = m.x * state.SIZE + m.y;
             const cell = state.cellsDOM[index];
-            cell.classList.add('revealed', 'bomb-explosion');
-            
-            // --- NUEVO: Icono de skin estacional ---
-            cell.textContent = UI.getMineIcon(); 
+            if (cell) {
+                cell.classList.add('revealed', 'bomb-explosion');
+                cell.textContent = UI.getMineIcon(); 
+            }
             document.getElementById('board').classList.add('shake-animation');
             if (typeof UI.playSound === 'function') UI.playSound('boom');
             if (i === mines.length - 1) {

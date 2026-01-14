@@ -1,9 +1,9 @@
 import { state } from './state.js';
-import { achievements, rankings } from './storage.js';
+import * as Storage from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 
-// --- FUNCIÓN QUE FALTABA ---
+// --- GESTIÓN DE PANTALLAS Y SKINS ---
 export function setSkin(s) {
     document.body.className = s;
     localStorage.setItem("skin", s);
@@ -15,12 +15,23 @@ export function showScreen(screen) {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 }
 
+// --- ACTUALIZACIÓN DE UI EN TIEMPO REAL ---
 export function updateDisplay() {
     if ($('time')) $('time').textContent = state.seconds;
     if ($('mines')) $('mines').textContent = state.MINES;
     if ($('flags')) $('flags').textContent = state.flagsUsed;
+    
+    // Si estamos en Blitz y queda poco tiempo, efecto visual
+    if (state.isBlitz && state.seconds <= 5) {
+        $('time').style.color = '#ff4444';
+        $('time').style.fontWeight = 'bold';
+    } else {
+        $('time').style.color = '';
+        $('time').style.fontWeight = '';
+    }
 }
 
+// --- TABLERO ---
 export function createBoard(size, onClick, onRightClick) {
     const boardEl = $('board');
     boardEl.innerHTML = "";
@@ -52,9 +63,9 @@ export function renderCell(x, y, value, type = 'reveal') {
 
     cell.classList.add("revealed");
     if (value === "💣") {
-        cell.textContent = "💥";
-        cell.style.background = "#ff4444";
-        spawnParticles(cell.getBoundingClientRect(), "#ffcc00", 12);
+        cell.textContent = getMineIcon();
+        cell.classList.add('bomb-explosion');
+        spawnParticles(cell.getBoundingClientRect(), "#ff4444", 12);
         screenShake();
     } else {
         cell.textContent = value || "";
@@ -62,6 +73,7 @@ export function renderCell(x, y, value, type = 'reveal') {
     }
 }
 
+// --- EFECTOS VISUALES ---
 function screenShake() {
     const board = $('board');
     if (board) {
@@ -86,21 +98,10 @@ function spawnParticles(rect, color, count = 10) {
     }
 }
 
-export function showAchievementNotification(name) {
-    const notif = document.createElement("div");
-    Object.assign(notif.style, {
-        position: 'fixed', top: '20px', right: '20px', backgroundColor: '#333',
-        color: 'white', padding: '15px 25px', borderRadius: '10px', zIndex: '9999',
-        borderLeft: '5px solid #ffcc00', boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
-        transform: 'translateX(150%)', transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-    });
-    notif.innerHTML = `<small style="font-size:0.7em; opacity:0.8">LOGRO DESBLOQUEADO</small><br><strong>${name}</strong>`;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.style.transform = 'translateX(0)', 100);
-    setTimeout(() => { 
-        notif.style.transform = 'translateX(150%)'; 
-        setTimeout(() => notif.remove(), 500); 
-    }, 4000);
+export function createParticles(x, y) {
+    const cell = state.cellsDOM[x * state.SIZE + y];
+    if (!cell) return;
+    spawnParticles(cell.getBoundingClientRect(), 'rgba(255, 255, 255, 0.6)', 6);
 }
 
 export function launchConfetti() {
@@ -111,14 +112,12 @@ export function launchConfetti() {
         confetti.style.left = Math.random() * 100 + 'vw';
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         confetti.style.animationDelay = Math.random() * 2 + 's';
-        confetti.style.opacity = Math.random();
         document.body.appendChild(confetti);
-        
-        // Limpiar el DOM
         setTimeout(() => confetti.remove(), 5000);
     }
 }
 
+// --- MODALES Y RENDERS ---
 export function renderAchievements() {
     const list = $('achList');
     if (!list) return;
@@ -134,7 +133,7 @@ export function renderAchievements() {
         { key: "perfect", name: "💯 Perfecto", desc: "Gana una partida." }
     ];
     badges.forEach(ach => {
-        const isEarned = achievements[ach.key];
+        const isEarned = Storage.achievements[ach.key];
         const li = document.createElement("li");
         li.style.cssText = `list-style:none; margin-bottom:12px; opacity:${isEarned ? 1 : 0.4}; border-left: 3px solid ${isEarned ? '#ffcc00' : '#444'}; padding-left: 10px;`;
         li.innerHTML = `<strong>${isEarned ? '✅' : '🔒'} ${ach.name}</strong><br><small style="color:#aaa">${ach.desc}</small>`;
@@ -143,37 +142,13 @@ export function renderAchievements() {
     $('achModal').style.display = "flex";
 }
 
-export function playSound(type) {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    if (type === 'click') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-    } else if (type === 'boom') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
-        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
-    }
-}
-
 export function renderRanking() {
     const list = $('rankList');
     if (!list) return;
     list.innerHTML = "";
-    const cats = { easy: "🟢 FÁCIL", medium: "🟡 MEDIO", hard: "🔴 DIFÍCIL", expert: "😈 EXPERTO" };
+    const cats = { easy: "🟢 FÁCIL", medium: "🟡 MEDIO", hard: "🔴 DIFÍCIL", expert: "😈 EXPERTO", blitz: "⚡ BLITZ" };
     Object.entries(cats).forEach(([key, label]) => {
-        const times = rankings[key] || [];
+        const times = Storage.rankings[key] || [];
         list.innerHTML += `<div style="margin-top:15px; color:#ffcc00; border-bottom: 1px solid #333"><b>${label}</b></div>`;
         list.innerHTML += times.length 
             ? times.map((t, i) => `<div style="padding: 2px 0;">${i+1}. ${t} segundos</div>`).join('') 
@@ -182,135 +157,113 @@ export function renderRanking() {
     $('rankModal').style.display = "flex";
 }
 
-export function showWin() { 
-    // Efecto confeti simple con partículas
-    for(let i=0; i<30; i++) {
-        setTimeout(() => {
-            spawnParticles({
-                left: Math.random() * window.innerWidth,
-                top: -10, width: 0, height: 0
-            }, `hsl(${Math.random() * 360}, 70%, 50%)`, 5);
-        }, i * 100);
-    }
-    if ($('finalTime')) $('finalTime').textContent = state.seconds;
-    $('winModal').style.display = "flex"; 
-
-    // --- AÑADE ESTA LÍNEA AQUÍ ---
-    launchConfetti(); 
-    // -----------------------------
+// --- NUEVO: RENDER HISTORIAL ---
+export function renderHistory() {
+    const history = Storage.getHistory();
+    const body = $('historyBody');
+    if (!body) return;
+    body.innerHTML = history.map(h => `
+        <tr style="border-bottom: 1px solid #333; height: 40px;">
+            <td>${h.fecha}</td>
+            <td>${h.dificultad.toUpperCase()}</td>
+            <td>${h.tiempo}s</td>
+            <td style="color: ${h.resultado === 'Victoria' ? '#2de1af' : '#ff4444'}">${h.resultado}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="4">No hay partidas registradas</td></tr>';
+    $('historyModal').style.display = "flex";
 }
-
-export function showLose() { 
-    $('loseModal').style.display = "flex"; 
-}
-
-// js/ui.js
-import * as Storage from './storage.js'; // Asegúrate de que esta línea esté arriba
 
 export function renderStats() {
-    // Usamos directamente Storage.stats para evitar el error de undefined
     const s = Storage.stats; 
-    const container = document.getElementById('statsContainer');
+    const container = $('statsContainer');
     if (!container) return;
-
-    // Si por algún motivo stats no cargó, ponemos valores a 0
-    const gamesPlayed = s ? s.gamesPlayed : 0;
-    const wins = s ? s.wins : 0;
-    const bombs = s ? s.bombsExploded : 0;
-    const currentStreak = s ? s.currentStreak : 0;
-    const maxStreak = s ? s.maxStreak : 0;
-
-    const winRate = gamesPlayed > 0 
-        ? ((wins / gamesPlayed) * 100).toFixed(1) 
-        : 0;
-
+    const winRate = s.gamesPlayed > 0 ? ((s.wins / s.gamesPlayed) * 100).toFixed(1) : 0;
     const data = [
-        { label: "Partidas", val: gamesPlayed, icon: "🎮" },
-        { label: "Victorias", val: wins, icon: "🏆" },
+        { label: "Partidas", val: s.gamesPlayed, icon: "🎮" },
+        { label: "Victorias", val: s.wins, icon: "🏆" },
         { label: "Win Rate", val: winRate + "%", icon: "📈" },
-        { label: "Bombas", val: bombs, icon: "💥" },
-        { label: "Racha Act.", val: currentStreak, icon: "🔥" },
-        { label: "Racha Máx.", val: maxStreak, icon: "⭐" }
+        { label: "Bombas", val: s.bombsExploded, icon: "💥" },
+        { label: "Racha Act.", val: s.currentStreak, icon: "🔥" },
+        { label: "Racha Máx.", val: s.maxStreak, icon: "⭐" }
     ];
-
     container.innerHTML = data.map(item => `
         <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1)">
             <div style="font-size: 0.8em; color: #aaa;">${item.icon} ${item.label}</div>
             <div style="font-size: 1.2em; font-weight: bold; color: #ffcc00;">${item.val}</div>
         </div>
     `).join('');
-
-    document.getElementById('statsModal').style.display = "flex";
+    $('statsModal').style.display = "flex";
 }
 
-// js/ui.js
-
+// --- UTILIDADES ---
 export function getMineIcon() {
     const skin = document.body.className;
     if (skin.includes('winter')) return "❄️";
     if (skin.includes('halloween')) return "💀";
+    if (skin.includes('cyberpunk')) return "🛰️";
     return "💣";
 }
 
+export function playSound(type) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start(); osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'boom') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+    }
+}
+
+export function showWin() { 
+    if ($('finalTime')) $('finalTime').textContent = state.seconds;
+    $('winModal').style.display = "flex"; 
+    launchConfetti(); 
+}
+
+export function showLose() { 
+    if (state.isBlitz && state.seconds <= 0) {
+        $('lose-title').textContent = "⏰ TIEMPO AGOTADO";
+    } else {
+        $('lose-title').textContent = "💥 HAS PERDIDO";
+    }
+    $('loseModal').style.display = "flex"; 
+}
+
 export function runReplay() {
-    // 1. Cerramos los modales
     document.getElementById('winModal').style.display = 'none';
     document.getElementById('loseModal').style.display = 'none';
-
-    // 2. "Reseteamos" visualmente las celdas (sin borrar las bombas del state.board)
     state.cellsDOM.forEach(cell => {
         cell.textContent = "";
-        cell.className = "cell"; // Quitamos 'revealed', 'bomb-explosion', etc.
+        cell.className = "cell";
         cell.style.backgroundColor = "";
-        cell.style.boxShadow = "";
     });
-
-    // 3. Reproducimos paso a paso
     state.history.forEach((move, index) => {
         setTimeout(() => {
             const cell = state.cellsDOM[move.x * state.SIZE + move.y];
-            
             if (move.type === 'reveal') {
                 cell.classList.add('revealed');
                 const val = state.board[move.x][move.y];
                 if (val === "💣") {
                     cell.textContent = getMineIcon();
                     cell.classList.add('bomb-explosion');
-                    cell.style.backgroundColor = "#ff4444";
                 } else {
                     cell.textContent = val === 0 ? "" : val;
-                    // Añadir color al número si lo tenías así
-                    if(val > 0) cell.setAttribute('data-val', val);
+                    if(val > 0) cell.classList.add("n" + val);
                 }
             } else if (move.type === 'flag') {
-                // Simular poner/quitar bandera
                 cell.textContent = cell.textContent === "🚩" ? "" : "🚩";
             }
-        }, index * 150); // Velocidad: un movimiento cada 150ms
+        }, index * 100);
     });
-}
-
-export function createParticles(x, y) {
-    const cell = state.cellsDOM[x * state.SIZE + y];
-    const rect = cell.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    for (let i = 0; i < 8; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        // Color basado en el número de la celda o blanco
-        p.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        p.style.left = centerX + 'px';
-        p.style.top = centerY + 'px';
-        
-        // Dirección aleatoria
-        const dx = (Math.random() - 0.5) * 100;
-        const dy = (Math.random() - 0.5) * 100;
-        p.style.setProperty('--dx', `${dx}px`);
-        p.style.setProperty('--dy', `${dy}px`);
-
-        document.body.appendChild(p);
-        setTimeout(() => p.remove(), 600);
-    }
 }

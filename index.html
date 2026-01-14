@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscaminas PRO</title>
     <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#ffcc00">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body class="moderno">
 
@@ -14,13 +17,15 @@
         <div class="skin-group">
             <button id="skin-winter">❄️ Invierno</button>
             <button id="skin-halloween">💀 Halloween</button>
+            <button id="skin-cyberpunk" class="special-btn">🌌 Cyberpunk</button>
         </div>
 
         <h3>Skins Estilo</h3>
-<div class="skin-group"> <button id="skin-clasico">🪟 Clásico</button>
-    <button id="skin-moderno">🧊 Moderno</button>
-    <button id="skin-minimal">◻️ Minimal</button>
-</div>
+        <div class="skin-group"> 
+            <button id="skin-clasico">🪟 Clásico</button>
+            <button id="skin-moderno">🧊 Moderno</button>
+            <button id="skin-minimal">◻️ Minimal</button>
+        </div>
 
         <h3>Dificultad</h3>
         <div class="difficulty-group">
@@ -29,13 +34,14 @@
             <button id="btn-hard">Difícil</button>
             <button id="btn-expert">😈 Experto</button>
             <button id="btn-custom">⚙️ Personalizado</button>
+            <button id="btn-blitz" class="special-btn">⚡ Modo Blitz (30s)</button>
         </div>
 
-        <br>
         <div class="meta-buttons">
             <button id="btn-achievements">🎖️ Logros</button>
             <button id="btn-ranking">🏆 Ranking</button>
             <button id="btn-stats">📊 Stats</button>
+            <button id="btn-history-modal">📜 Historial</button>
         </div>
     </div>
 
@@ -48,10 +54,10 @@
                 <span>🚩</span> <span id="flags">0</span>
             </div>
             <div class="stat-group">
-                <span>⏱️</span> <span id="time">0</span>s
+                <span id="timer-icon">⏱️</span> <span id="time">0</span>s
+            </div>
+            <button id="btn-home-game">🏠</button>
         </div>
-    <button id="btn-home-game">🏠</button>
-</div>
         <div id="board"></div>
     </div>
 
@@ -67,7 +73,8 @@
 
     <div id="loseModal" class="modal">
         <div class="modalContent">
-            <h1>💥 HAS PERDIDO</h1>
+            <h1 id="lose-title">💥 HAS PERDIDO</h1>
+            <p id="lose-msg"></p>
             <button class="btn-replay">📺 Ver Replay</button>
             <button class="btn-restart">🔄 Volver a jugar</button>
             <button class="btn-home">🏠 Inicio</button>
@@ -76,7 +83,7 @@
 
     <div id="achModal" class="modal">
         <div class="modalContent">
-            <h3>🎖️ Logros</h3>
+            <h3>🎖️ Logros Desbloqueados</h3>
             <ul id="achList"></ul>
             <button class="close-modal-btn">Cerrar</button>
         </div>
@@ -84,8 +91,26 @@
 
     <div id="rankModal" class="modal">
         <div class="modalContent">
-            <h3>🏆 Mejores tiempos</h3>
+            <h3>🏆 Mejores Tiempos</h3>
             <ul id="rankList"></ul>
+            <button class="close-modal-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="historyModal" class="modal">
+        <div class="modalContent" style="max-width: 500px;">
+            <h3>📜 Últimas 10 Partidas</h3>
+            <table id="historyTable" style="width:100%; margin: 15px 0; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #444;">
+                        <th>Fecha</th>
+                        <th>Modo</th>
+                        <th>Tiempo</th>
+                        <th>Resultado</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody" style="text-align: center;"></tbody>
+            </table>
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
@@ -105,42 +130,44 @@
     <div id="statsModal" class="modal">
         <div class="modalContent">
             <h3>📊 Estadísticas Globales</h3>
-            <div id="statsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0;">
-                </div>
+            <div id="statsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0;"></div>
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
-
-    <div id="tutorialModal" class="modal" style="display: none;">
-    <div class="modal-content tutorial-card">
-        <div class="tutorial-header">
-            <h2>🚀 Cómo Jugar Pro</h2>
-            <button class="close-tutorial">×</button>
+    
+    <div id="tutorialModal" class="modal">
+        <div class="modalContent tutorial-card">
+            <div class="tutorial-header">
+                <h2>🚀 Cómo Jugar Pro</h2>
+                <button class="close-tutorial">×</button>
+            </div>
+            <div class="tutorial-steps">
+                <div class="step">
+                    <span class="step-icon">🖱️</span>
+                    <p><strong>Click Izquierdo:</strong> Revela una casilla. ¡Cuidado con las minas!</p>
+                </div>
+                <div class="step">
+                    <span class="step-icon">🚩</span>
+                    <p><strong>Click Derecho:</strong> Pon una bandera o una ❓.</p>
+                </div>
+                <div class="step">
+                    <span class="step-icon">⚡</span>
+                    <p><strong>Truco Chord:</strong> Click en un número para abrir vecinos si las banderas ya están puestas.</p>
+                </div>
+                <div class="step">
+                    <span class="step-icon">⏳</span>
+                    <p><strong>Modo Blitz:</strong> El tiempo baja. ¡Revelar celdas te da segundos extra!</p>
+                </div>
+            </div>
+            <button id="btn-close-tutorial" class="btn-primary">¡Entendido!</button>
         </div>
-        
-        <div class="tutorial-steps">
-            <div class="step">
-                <span class="step-icon">🖱️</span>
-                <p><strong>Click Izquierdo:</strong> Revela una casilla. ¡Cuidado con las minas!</p>
-            </div>
-            <div class="step">
-                <span class="step-icon">🚩</span>
-                <p><strong>Click Derecho:</strong> Pon una bandera o una ❓ si tienes dudas.</p>
-            </div>
-            <div class="step">
-                <span class="step-icon">⚡</span>
-                <p><strong>Truco Pro (Chord):</strong> Haz click en un número ya revelado para abrir las de alrededor si ya pusiste las banderas correctas.</p>
-            </div>
-            <div class="step">
-                <span class="step-icon">🎭</span>
-                <p><strong>Personaliza:</strong> Cambia el estilo visual en el menú principal en cualquier momento.</p>
-            </div>
-        </div>
-
-        <button id="btn-close-tutorial" class="btn-primary">¡Entendido, a jugar!</button>
     </div>
-</div>
 
+    <script>
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
