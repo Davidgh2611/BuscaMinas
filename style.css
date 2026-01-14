@@ -17,6 +17,56 @@ body.halloween {
     --txt: #ffffff;
 }
 
+button {
+    /* Estado inicial: un poco de relieve con sombra */
+    transition: all 0.1s ease;
+    box-shadow: 0 4px 0 #000; /* Sombra sólida que da efecto de grosor */
+    position: relative;
+    top: 0;
+}
+
+button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px); /* Sube un poco al pasar el mouse */
+    box-shadow: 0 6px 0 #000;    /* La sombra crece al subir */
+}
+
+button:active {
+    transform: translateY(3px); /* Baja más de lo que subió */
+    box-shadow: 0 1px 0 #000;    /* La sombra casi desaparece al "aplastarse" */
+    filter: brightness(0.9);     /* Se oscurece un poco al presionarlo */
+}
+
+/* Esto asegura que los grupos de botones siempre vayan de lado */
+.skin-group, 
+.difficulty-group, 
+.meta-buttons {
+    display: flex !important;
+    flex-direction: row !important; /* Fuerza la alineación horizontal */
+    flex-wrap: wrap;               /* Permite que bajen si no hay espacio */
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin: 10px 0;
+}
+
+/* Evita que los botones individuales intenten ocupar todo el ancho */
+#menu button {
+    width: auto !important;
+    min-width: 100px;
+    padding: 8px 15px;
+}
+
+/* Mantiene el cuerpo del menú centrado y vertical */
+#menu.screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 100vh;
+}
+
 body{
 margin:0;
 background:var(--bg);
