@@ -1,97 +1,120 @@
-# 🧨 Buscaminas PRO - Edición Definitiva
+<h1>🧨 Buscaminas PRO - Edición Definitiva</h1>
 
-![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.2.0-orange.svg)
-![JS](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)
+<p>
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License MIT">
+  <img src="https://img.shields.io/badge/version-1.2.0-orange.svg" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/JavaScript-ES6+-yellow.svg" alt="JavaScript ES6+">
+</p>
 
-Una reinvención moderna y elegante del clásico juego de lógica de Windows. **Buscaminas PRO** combina la jugabilidad nostálgica con una interfaz de usuario minimalista, sistemas de personalización avanzada y mecánicas de juego competitivas.
+<p>
+  Una reinvención moderna y elegante del clásico juego de lógica de Windows.
+  <strong>Buscaminas PRO</strong> combina la jugabilidad nostálgica con una interfaz
+  minimalista, personalización avanzada y mecánicas competitivas.
+</p>
 
----
+<hr>
 
-## ✨ Características Principales
+<h2>✨ Características Principales</h2>
 
-### 🎮 Experiencia de Juego
-* **4 Niveles de Dificultad:** Desde Principiante (8x8) hasta Experto (16x16 con 99 minas).
-* **Modo Personalizado:** Configura dimensiones y densidad de minas a tu gusto.
-* **Sistema de Chord:** Mecánica avanzada que permite revelar celdas adyacentes rápidamente si las banderas coinciden con el número.
+<h3>🎮 Experiencia de Juego</h3>
+<ul>
+  <li><strong>4 niveles de dificultad:</strong> desde Principiante (8×8) hasta Experto (16×16 con 99 minas).</li>
+  <li><strong>Modo personalizado:</strong> configura dimensiones y densidad de minas.</li>
+  <li><strong>Sistema de Chord:</strong> revela celdas adyacentes cuando las banderas coinciden.</li>
+</ul>
 
-### 🎭 Personalización (Skins)
-El juego incluye un sistema dinámico de apariencias que cambia iconos, colores y animaciones en tiempo real:
-* **Temporadas:** Invierno ❄️ y Halloween 💀.
-* **Estilos:** Clásico 🪟, Moderno 🧊 y Minimalista ◻️.
+<h3>🎭 Personalización (Skins)</h3>
+<p>Sistema dinámico de apariencias con cambios en tiempo real:</p>
+<ul>
+  <li><strong>Temporadas:</strong> Invierno ❄️ y Halloween 💀</li>
+  <li><strong>Estilos:</strong> Clásico 🪟, Moderno 🧊 y Minimalista ◻️</li>
+</ul>
 
-### 📊 Progreso y Estadísticas
-* **Sistema de Logros:** Desbloquea medallas por velocidad, persistencia y victorias perfectas.
-* **Ranking Local:** Registro de los mejores tiempos por categoría.
-* **Persistencia de Datos:** Guardado automático de configuraciones y récords mediante `localStorage`.
+<h3>📊 Progreso y Estadísticas</h3>
+<ul>
+  <li><strong>Sistema de logros:</strong> velocidad, partidas perfectas y desafíos.</li>
+  <li><strong>Ranking local:</strong> mejores tiempos por dificultad.</li>
+  <li><strong>Persistencia:</strong> guardado automático con <code>localStorage</code>.</li>
+</ul>
 
----
+<hr>
 
-## 🚀 Tecnologías Utilizadas
+<h2>🚀 Tecnologías Utilizadas</h2>
+<ul>
+  <li><strong>HTML5:</strong> estructura semántica.</li>
+  <li><strong>CSS3:</strong> diseño responsivo, animaciones y efectos visuales.</li>
+  <li><strong>JavaScript (ES6+):</strong> lógica del juego y manipulación del DOM.</li>
+</ul>
 
-* **HTML5:** Estructura semántica.
-* **CSS3:** Diseño responsivo, efectos de "Glassmorphism" y animaciones complejas (efecto de hundimiento en botones, sacudida de tablero).
-* **Vanilla JavaScript (ES6+):** Lógica del juego basada en módulos, manipulación del DOM y gestión de estados.
+<hr>
 
----
+<h2>🛠️ Instalación y Uso</h2>
+<p>No requiere dependencias externas.</p>
 
-## 🛠️ Instalación y Uso
+<ol>
+  <li>Clona el repositorio:
+    <pre><code>git clone https://github.com/Davidgh2611/BuscaMinas</code></pre>
+  </li>
+  <li>Entra en la carpeta:
+    <pre><code>cd BuscaMinas</code></pre>
+  </li>
+  <li>Abre <code>index.html</code> en tu navegador favorito.</li>
+</ol>
 
-No requiere dependencias externas. Solo clona y abre en tu navegador:
+<hr>
 
-1.  Clona el repositorio:
-    ```bash
-    git clone [https://github.com/TU_USUARIO/buscaminas-pro.git](https://github.com/TU_USUARIO/buscaminas-pro.git)
-    ```
-2.  Entra en la carpeta:
-    ```bash
-    cd buscaminas-pro
-    ```
-3.  Abre el archivo `index.html` en tu navegador preferido.
+<h2>🧠 Estructura del Proyecto</h2>
 
----
-
-## 🧠 Estructura del Proyecto
-
-```text
-├── index.html          # Estructura principal y contenedores de UI
+<pre><code>
+├── index.html        # Estructura principal y UI
 ├── css/
-│   └── style.css       # Estilos globales, temas y animaciones
+│   └── style.css     # Estilos, temas y animaciones
 └── js/
-    ├── main.js         # Orquestador: inicialización y eventos de botones
-    ├── game.js         # Núcleo: lógica de minas, revelado y victoria
-    ├── ui.js           # Interfaz: renderizado de celdas, menús y partículas
-    ├── storage.js      # Datos: gestión de logros y puntuaciones
-    └── state.js        # Estado global: variables en tiempo real del juego
+    ├── main.js       # Inicialización y eventos
+    ├── game.js       # Lógica del juego
+    ├── ui.js         # Renderizado y efectos visuales
+    ├── storage.js    # Rankings y logros
+    └── state.js      # Estado global del juego
+</code></pre>
 
-📸 Vista Previa de la Interfaz
-Menú Principal
-Diseño centrado con secciones diferenciadas para personalización y dificultad. Incluye efectos visuales de elevación y profundidad al interactuar.
+<hr>
 
-Modo de Juego
-Barra superior elástica que se ajusta al tamaño del tablero, con contadores dinámicos de minas, banderas y tiempo.
+<h2>📸 Vista Previa</h2>
 
-📈 Roadmap (Futuras Mejoras)
-[ ] Modo Multijugador online (WebSockets).
+<h3>Menú Principal</h3>
+<p>
+  Interfaz centrada con selección de skins y dificultad,
+  animaciones suaves y efectos de profundidad.
+</p>
 
-[ ] Implementación de sonidos ambientales y efectos especiales (SFX).
+<h3>Modo de Juego</h3>
+<p>
+  Barra superior dinámica con contadores de minas, banderas y tiempo,
+  adaptada al tamaño del tablero.
+</p>
 
-[ ] Soporte para gestos táctiles avanzados en móviles.
+<hr>
 
-[ ] Conversión a PWA (Progressive Web App).
+<h2>📈 Roadmap</h2>
+<ul>
+  <li>☐ Ranking online</li>
+  <li>☐ Sonidos y efectos (SFX)</li>
+  <li>☐ Soporte táctil avanzado (móvil)</li>
+  <li>☐ Conversión a PWA (Progressive Web App)</li>
+</ul>
 
-📄 Licencia
-Este proyecto está bajo la Licencia MIT - Siéntete libre de usarlo, modificarlo y aprender de él.
+<hr>
 
-Creado con ❤️ por [Tu Nombre/Usuario]
+<h2>📄 Licencia</h2>
+<p>
+  Este proyecto está bajo la <strong>Licencia MIT</strong>.
+  Puedes usarlo, modificarlo y aprender de él libremente.
+</p>
 
+<hr>
 
----
-
-### ¿Cómo añadirlo correctamente?
-1. Crea un nuevo archivo en tu proyecto llamado **README.md**.
-2. Pega el código de arriba.
-3. Asegúrate de cambiar `TU_USUARIO` en el enlace del clon por tu nombre real de GitHub.
-4. Haz los comandos que te di antes: `git add README.md`, `git commit -m "Añadido README profesional"` y `git push`.
-
-**¿Te gustaría que te ayude a crear una imagen de "banner" o captura de pantalla para ponerla al principio del README?** Eso lo hace ver mucho más profesional.
+<h2>❤️ Autor</h2>
+<p>
+  Creado con pasión por <strong>Davidgh2611</strong>.<br>
+  Si te gusta el proyecto, ⭐ ¡dale una estrella en GitHub!
+</p>
