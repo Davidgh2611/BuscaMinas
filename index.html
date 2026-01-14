@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Buscaminas PRO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="moderno">
+
+    <div id="menu" class="screen">
+        <h1>🧨 Buscaminas PRO</h1>
+        <h3>Skin</h3>
+        <button id="skin-clasico">🪟 Clásico</button>
+        <button id="skin-moderno">🧊 Moderno</button>
+        <button id="skin-minimal">◻️ Minimal</button>
+
+        <h3>Dificultad</h3>
+        <button id="btn-easy">Fácil</button>
+        <button id="btn-medium">Media</button>
+        <button id="btn-hard">Difícil</button>
+        <button id="btn-expert">😈 Experto</button>
+
+        <br>
+        <button id="btn-achievements">🎖️ Logros</button>
+        <button id="btn-ranking">🏆 Ranking</button>
+    </div>
+
+    <div id="gameUI" class="screen">
+        <div id="topbar">
+            💣 <span id="mines">0</span>
+            🚩 <span id="flags">0</span>
+            ⏱️ <span id="time">0</span>s
+            <button id="btn-home-game">🏠</button>
+        </div>
+        <div id="board"></div>
+    </div>
+
+    <div id="winModal" class="modal">
+        <div class="modalContent">
+            <h1>🏆 HAS GANADO</h1>
+            <p>Tiempo: <b><span id="finalTime"></span>s</b></p>
+            <button class="btn-restart">🔄 Volver a jugar</button>
+            <button class="btn-home">🏠 Inicio</button>
+        </div>
+    </div>
+
+    <div id="loseModal" class="modal">
+        <div class="modalContent">
+            <h1>💥 HAS PERDIDO</h1>
+            <button class="btn-restart">🔄 Volver a jugar</button>
+            <button class="btn-home">🏠 Inicio</button>
+        </div>
+    </div>
+
+    <div id="achModal" class="modal">
+        <div class="modalContent">
+            <h3>🎖️ Logros</h3>
+            <ul id="achList"></ul>
+            <button class="close-modal-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="rankModal" class="modal">
+        <div class="modalContent">
+            <h3>🏆 Mejores tiempos</h3>
+            <ul id="rankList"></ul>
+            <button class="close-modal-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
