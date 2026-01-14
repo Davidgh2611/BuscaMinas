@@ -38,6 +38,7 @@ function clickCell(x, y) {
     if (state.revealed[x][y]) { chord(x, y); checkWin(); return; }
     reveal(x, y);
     checkWin();
+    UI.createParticles(x, y)
 }
 
 function reveal(x, y) {
@@ -190,7 +191,7 @@ function lose(hitX, hitY) {
             
             // --- NUEVO: Icono de skin estacional ---
             cell.textContent = UI.getMineIcon(); 
-
+            document.getElementById('board').classList.add('shake-animation');
             if (typeof UI.playSound === 'function') UI.playSound('boom');
             if (i === mines.length - 1) {
                 setTimeout(() => UI.showLose(), 800);

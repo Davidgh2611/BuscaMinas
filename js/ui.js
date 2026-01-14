@@ -289,3 +289,28 @@ export function runReplay() {
         }, index * 150); // Velocidad: un movimiento cada 150ms
     });
 }
+
+export function createParticles(x, y) {
+    const cell = state.cellsDOM[x * state.SIZE + y];
+    const rect = cell.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    for (let i = 0; i < 8; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        // Color basado en el número de la celda o blanco
+        p.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        p.style.left = centerX + 'px';
+        p.style.top = centerY + 'px';
+        
+        // Dirección aleatoria
+        const dx = (Math.random() - 0.5) * 100;
+        const dy = (Math.random() - 0.5) * 100;
+        p.style.setProperty('--dx', `${dx}px`);
+        p.style.setProperty('--dy', `${dy}px`);
+
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 600);
+    }
+}
