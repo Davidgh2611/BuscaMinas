@@ -9,22 +9,33 @@
 
     <div id="menu" class="screen">
         <h1>🧨 Buscaminas PRO</h1>
-        <h3>Skin</h3>
+        
+        <h3>Skins Temporadas</h3>
+        <div class="skin-group">
+            <button id="skin-winter">❄️ Invierno</button>
+            <button id="skin-halloween">💀 Halloween</button>
+        </div>
+
+        <h3>Skins Estilo</h3>
         <button id="skin-clasico">🪟 Clásico</button>
         <button id="skin-moderno">🧊 Moderno</button>
         <button id="skin-minimal">◻️ Minimal</button>
 
         <h3>Dificultad</h3>
-        <button id="btn-easy">Fácil</button>
-        <button id="btn-medium">Media</button>
-        <button id="btn-hard">Difícil</button>
-        <button id="btn-expert">😈 Experto</button>
-        <button id="btn-custom">⚙️ Personalizado</button>
+        <div class="difficulty-group">
+            <button id="btn-easy">Fácil</button>
+            <button id="btn-medium">Media</button>
+            <button id="btn-hard">Difícil</button>
+            <button id="btn-expert">😈 Experto</button>
+            <button id="btn-custom">⚙️ Personalizado</button>
+        </div>
 
         <br>
-        <button id="btn-achievements">🎖️ Logros</button>
-        <button id="btn-ranking">🏆 Ranking</button>
-        <button id="btn-stats">📊 Stats</button>
+        <div class="meta-buttons">
+            <button id="btn-achievements">🎖️ Logros</button>
+            <button id="btn-ranking">🏆 Ranking</button>
+            <button id="btn-stats">📊 Stats</button>
+        </div>
     </div>
 
     <div id="gameUI" class="screen">
@@ -41,6 +52,7 @@
         <div class="modalContent">
             <h1>🏆 HAS GANADO</h1>
             <p>Tiempo: <b><span id="finalTime"></span>s</b></p>
+            <button class="btn-replay">📺 Ver Replay</button>
             <button class="btn-restart">🔄 Volver a jugar</button>
             <button class="btn-home">🏠 Inicio</button>
         </div>
@@ -49,6 +61,7 @@
     <div id="loseModal" class="modal">
         <div class="modalContent">
             <h1>💥 HAS PERDIDO</h1>
+            <button class="btn-replay">📺 Ver Replay</button>
             <button class="btn-restart">🔄 Volver a jugar</button>
             <button class="btn-home">🏠 Inicio</button>
         </div>
@@ -71,25 +84,25 @@
     </div>
 
     <div id="customModal" class="modal">
-    <div class="modalContent">
-        <h3>⚙️ Tablero Personalizado</h3>
-        <div style="display:flex; flex-direction:column; gap:10px; margin: 15px 0;">
-            <label>Tamaño (8-30): <input type="number" id="custom-size" value="10" min="8" max="30"></label>
-            <label>Minas: <input type="number" id="custom-mines" value="15" min="1"></label>
+        <div class="modalContent">
+            <h3>⚙️ Tablero Personalizado</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; margin: 15px 0;">
+                <label>Tamaño (8-30): <input type="number" id="custom-size" value="10" min="8" max="30"></label>
+                <label>Minas: <input type="number" id="custom-mines" value="15" min="1"></label>
+            </div>
+            <button id="btn-start-custom">Empezar</button>
+            <button class="close-modal-btn">Cancelar</button>
         </div>
-        <button id="btn-start-custom">Empezar</button>
-        <button onclick="document.getElementById('customModal').style.display='none'">Cancelar</button>
     </div>
-</div>
 
     <div id="statsModal" class="modal">
-    <div class="modalContent">
-        <h3>📊 Estadísticas Globales</h3>
-        <div id="statsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0;">
-            </div>
-        <button onclick="document.getElementById('statsModal').style.display='none'">Cerrar</button>
+        <div class="modalContent">
+            <h3>📊 Estadísticas Globales</h3>
+            <div id="statsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0;">
+                </div>
+            <button class="close-modal-btn">Cerrar</button>
+        </div>
     </div>
-</div>
 
     <script type="module" src="js/main.js"></script>
 </body>

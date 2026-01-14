@@ -11,5 +11,6 @@ export const state = {
     timer: null,
     seconds: 0,
     flagsUsed: 0,
-    lastConfig: {}  // Para reiniciar rápido
+    lastConfig: {} , // Para reiniciar rápido
+    history: [] // <--- AÑADE ESTO
 };

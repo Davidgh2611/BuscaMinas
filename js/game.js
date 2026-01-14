@@ -9,6 +9,9 @@ export function startGame(size, mines, exp) {
     state.lastConfig = { size, mines, exp };
     state.cellsRevealedCount = 0;
     
+    // --- NUEVO: Limpiar historial al empezar ---
+    state.history = []; 
+    
     state.board = [...Array(size)].map(() => Array(size).fill(0));
     state.revealed = [...Array(size)].map(() => Array(size).fill(false));
     state.flagged = [...Array(size)].map(() => Array(size).fill(false));
@@ -28,6 +31,10 @@ export function startGame(size, mines, exp) {
 function clickCell(x, y) {
     if (state.gameOver || state.flagged[x][y]) return;
     if (state.firstClick) { placeMines(x, y); state.firstClick = false; }
+    
+    // --- NUEVO: Registrar click en historial ---
+    state.history.push({ x, y, type: 'reveal' });
+
     if (state.revealed[x][y]) { chord(x, y); checkWin(); return; }
     reveal(x, y);
     checkWin();
@@ -40,13 +47,21 @@ function reveal(x, y) {
     if (state.cellsRevealedCount >= 50) Storage.unlockAchievement("survivor", "Superviviente");
     
     UI.renderCell(x, y, state.board[x][y]);
-    if (state.board[x][y] === "💣") { lose(); return; }
+    
+    // Cambiamos "💣" por la detección de icono dinámico
+    if (state.board[x][y] === "💣") { lose(x, y); return; }
     
     if (state.board[x][y] === 0 && !state.expert) {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
-                if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE) reveal(nx, ny);
+                if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE) {
+                    // Si el vecino es 0, también lo grabamos para el replay
+                    if (!state.revealed[nx][ny]) {
+                        state.history.push({ x: nx, y: ny, type: 'reveal' });
+                        reveal(nx, ny);
+                    }
+                }
             }
         }
     }
@@ -57,19 +72,18 @@ function toggleFlag(x, y) {
 
     const cell = state.cellsDOM[x * state.SIZE + y];
     
-    // Ciclo: Nada -> Bandera -> Interrogación -> Nada
+    // --- NUEVO: Registrar bandera en historial ---
+    state.history.push({ x, y, type: 'flag' });
+
     if (!state.flagged[x][y] && cell.textContent !== "❓") {
-        // Poner Bandera
         state.flagged[x][y] = true;
         state.flagsUsed++;
         cell.textContent = "🚩";
     } else if (state.flagged[x][y]) {
-        // Cambiar Bandera por Interrogación
         state.flagged[x][y] = false;
         state.flagsUsed--;
         cell.textContent = "❓";
     } else {
-        // Quitar Interrogación
         cell.textContent = "";
     }
     
@@ -88,10 +102,7 @@ function checkWin() {
     if (win) {
         state.gameOver = true;
         clearInterval(state.timer);
-        
-        // --- AÑADE ESTA LÍNEA AQUÍ ---
         Storage.updateStats('win'); 
-        // -----------------------------
 
         let cat = "easy";
         if (state.SIZE === 12) cat = "medium";
@@ -112,12 +123,8 @@ function placeMines(sx, sy) {
     while (p < state.MINES) {
         let x = Math.random() * state.SIZE | 0;
         let y = Math.random() * state.SIZE | 0;
-
-        // Comprobamos que no haya bomba Y que no esté en el área de 3x3 del clic inicial
         const isNearFirstClick = Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1;
-        
         if (state.board[x][y] === "💣" || isNearFirstClick) continue;
-        
         state.board[x][y] = "💣"; 
         p++;
     }
@@ -148,7 +155,13 @@ function chord(x, y) {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
-                if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE && !state.flagged[nx][ny]) reveal(nx, ny);
+                if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE && !state.flagged[nx][ny]) {
+                    // Grabamos cada apertura del chord
+                    if (!state.revealed[nx][ny]) {
+                        state.history.push({ x: nx, y: ny, type: 'reveal' });
+                        reveal(nx, ny);
+                    }
+                }
             }
         }
     }
@@ -157,11 +170,7 @@ function chord(x, y) {
 function lose(hitX, hitY) {
     state.gameOver = true;
     clearInterval(state.timer);
-
-    // --- AÑADE ESTA LÍNEA AQUÍ ---
-    // Registra la derrota y suma 1 bomba explotada
     Storage.updateStats('lose', 1); 
-    // -----------------------------
 
     const mines = [];
     for (let x = 0; x < state.SIZE; x++) {
@@ -178,7 +187,10 @@ function lose(hitX, hitY) {
             const index = m.x * state.SIZE + m.y;
             const cell = state.cellsDOM[index];
             cell.classList.add('revealed', 'bomb-explosion');
-            cell.textContent = "💣";
+            
+            // --- NUEVO: Icono de skin estacional ---
+            cell.textContent = UI.getMineIcon(); 
+
             if (typeof UI.playSound === 'function') UI.playSound('boom');
             if (i === mines.length - 1) {
                 setTimeout(() => UI.showLose(), 800);

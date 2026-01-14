@@ -1,6 +1,21 @@
 body.moderno { --bg:#1e1e1e; --cell:#444; --rev:#ddd; --txt:#fff; }
 body.clasico { --bg:#008080; --cell:#aaa; --rev:#eee; --txt:#000; }
 body.minimal { --bg:#f5f5f5; --cell:#ddd; --rev:#fff; --txt:#000; }
+/* Skin de Invierno ❄️ */
+body.winter {
+    --bg: #e0f7fa;
+    --cell: #b2ebf2;
+    --rev: #ffffff;
+    --txt: #006064;
+}
+
+/* Skin de Halloween 💀 */
+body.halloween {
+    --bg: #1a1a1a;
+    --cell: #4e342e;
+    --rev: #ef6c00;
+    --txt: #ffffff;
+}
 
 body{
 margin:0;

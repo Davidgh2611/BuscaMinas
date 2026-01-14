@@ -242,3 +242,50 @@ export function renderStats() {
 
     document.getElementById('statsModal').style.display = "flex";
 }
+
+// js/ui.js
+
+export function getMineIcon() {
+    const skin = document.body.className;
+    if (skin.includes('winter')) return "❄️";
+    if (skin.includes('halloween')) return "💀";
+    return "💣";
+}
+
+export function runReplay() {
+    // 1. Cerramos los modales
+    document.getElementById('winModal').style.display = 'none';
+    document.getElementById('loseModal').style.display = 'none';
+
+    // 2. "Reseteamos" visualmente las celdas (sin borrar las bombas del state.board)
+    state.cellsDOM.forEach(cell => {
+        cell.textContent = "";
+        cell.className = "cell"; // Quitamos 'revealed', 'bomb-explosion', etc.
+        cell.style.backgroundColor = "";
+        cell.style.boxShadow = "";
+    });
+
+    // 3. Reproducimos paso a paso
+    state.history.forEach((move, index) => {
+        setTimeout(() => {
+            const cell = state.cellsDOM[move.x * state.SIZE + move.y];
+            
+            if (move.type === 'reveal') {
+                cell.classList.add('revealed');
+                const val = state.board[move.x][move.y];
+                if (val === "💣") {
+                    cell.textContent = getMineIcon();
+                    cell.classList.add('bomb-explosion');
+                    cell.style.backgroundColor = "#ff4444";
+                } else {
+                    cell.textContent = val === 0 ? "" : val;
+                    // Añadir color al número si lo tenías así
+                    if(val > 0) cell.setAttribute('data-val', val);
+                }
+            } else if (move.type === 'flag') {
+                // Simular poner/quitar bandera
+                cell.textContent = cell.textContent === "🚩" ? "" : "🚩";
+            }
+        }, index * 150); // Velocidad: un movimiento cada 150ms
+    });
+}
