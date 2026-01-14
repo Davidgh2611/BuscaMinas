@@ -22,6 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-medium', () => Game.startGame(12, 25, false));
     bind('btn-hard',   () => Game.startGame(16, 50, false));
     bind('btn-expert', () => Game.startGame(16, 50, true));
+    bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
+
+    bind('btn-start-custom', () => {
+    const size = parseInt(document.getElementById('custom-size').value);
+    const mines = parseInt(document.getElementById('custom-mines').value);
+    
+    // Validación básica para no romper el juego
+    if (size >= 8 && size <= 30 && mines < size * size) {
+        Game.startGame(size, mines, false);
+    } else {
+        alert("Configuración no válida");
+    }
+});
 
     // Menús
     bind('btn-achievements', UI.renderAchievements);
