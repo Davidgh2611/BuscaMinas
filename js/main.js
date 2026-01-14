@@ -48,6 +48,26 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-ranking', UI.renderRanking);
     bind('btn-stats', UI.renderStats);
     bind('btn-home-game', () => UI.showScreen('menu'));
+    
+
+    // Lógica para el Tutorial Rápido
+    const tutorialModal = document.getElementById('tutorialModal');
+    const hasSeenTutorial = localStorage.getItem('seenTutorial');
+
+    // Solo mostrar si no lo ha visto antes
+    if (!hasSeenTutorial) {
+        setTimeout(() => {
+            tutorialModal.style.display = 'flex';
+        }, 1000); // Aparece un segundo después de cargar para no agobiar
+    }
+
+    const closeTutorial = () => {
+        tutorialModal.style.display = 'none';
+        localStorage.setItem('seenTutorial', 'true');
+    };
+
+    document.getElementById('btn-close-tutorial').onclick = closeTutorial;
+    document.querySelector('.close-tutorial').onclick = closeTutorial;
 
     // --- BOTONES DINÁMICOS (Restart y Home en modales) ---
     document.querySelectorAll('.btn-home').forEach(btn => {
