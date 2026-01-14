@@ -54,11 +54,26 @@ function reveal(x, y) {
 
 function toggleFlag(x, y) {
     if (state.gameOver || state.revealed[x][y]) return;
-    state.flagged[x][y] = !state.flagged[x][y];
-    state.flagsUsed += state.flagged[x][y] ? 1 : -1;
-    UI.renderCell(x, y, state.flagged[x][y], 'flag');
+
+    const cell = state.cellsDOM[x * state.SIZE + y];
+    
+    // Ciclo: Nada -> Bandera -> Interrogación -> Nada
+    if (!state.flagged[x][y] && cell.textContent !== "❓") {
+        // Poner Bandera
+        state.flagged[x][y] = true;
+        state.flagsUsed++;
+        cell.textContent = "🚩";
+    } else if (state.flagged[x][y]) {
+        // Cambiar Bandera por Interrogación
+        state.flagged[x][y] = false;
+        state.flagsUsed--;
+        cell.textContent = "❓";
+    } else {
+        // Quitar Interrogación
+        cell.textContent = "";
+    }
+    
     UI.updateDisplay();
-    checkWin();
 }
 
 function checkWin() {
@@ -74,6 +89,10 @@ function checkWin() {
         state.gameOver = true;
         clearInterval(state.timer);
         
+        // --- AÑADE ESTA LÍNEA AQUÍ ---
+        Storage.updateStats('win'); 
+        // -----------------------------
+
         let cat = "easy";
         if (state.SIZE === 12) cat = "medium";
         if (state.SIZE === 16) cat = state.expert ? "expert" : "hard";
@@ -139,11 +158,15 @@ function lose(hitX, hitY) {
     state.gameOver = true;
     clearInterval(state.timer);
 
+    // --- AÑADE ESTA LÍNEA AQUÍ ---
+    // Registra la derrota y suma 1 bomba explotada
+    Storage.updateStats('lose', 1); 
+    // -----------------------------
+
     const mines = [];
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
             if (state.board[x][y] === "💣") {
-                // La que pisamos va al principio para que sea la primera en explotar
                 if (x === hitX && y === hitY) mines.unshift({x, y});
                 else mines.push({x, y});
             }
@@ -151,20 +174,15 @@ function lose(hitX, hitY) {
     }
 
     mines.forEach((m, i) => {
-        // CAMBIO AQUÍ: Multiplicamos el índice por 200 para que sea más lento
         setTimeout(() => {
             const index = m.x * state.SIZE + m.y;
             const cell = state.cellsDOM[index];
-            
             cell.classList.add('revealed', 'bomb-explosion');
             cell.textContent = "💣";
-            
             if (typeof UI.playSound === 'function') UI.playSound('boom');
-
-            // Mostrar el modal cuando explote la ÚLTIMA mina
             if (i === mines.length - 1) {
-                setTimeout(() => UI.showLose(), 800); // Un poco más de espera al final
+                setTimeout(() => UI.showLose(), 800);
             }
-        }, i * 200); // <--- 200ms es el tiempo entre cada bomba
+        }, i * 110); 
     });
 }

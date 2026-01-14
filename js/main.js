@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-achievements', UI.renderAchievements);
     bind('btn-ranking', UI.renderRanking);
     bind('btn-home-game', () => UI.showScreen('menu'));
+    bind('btn-stats', UI.renderStats);
 
     // Botones con clases (Restart y Home en modales)
     document.querySelectorAll('.btn-home').forEach(btn => {

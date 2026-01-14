@@ -103,6 +103,22 @@ export function showAchievementNotification(name) {
     }, 4000);
 }
 
+export function launchConfetti() {
+    const colors = ['#ffcc00', '#ff3366', '#2de1af', '#29cdff', '#a154f2'];
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        confetti.style.opacity = Math.random();
+        document.body.appendChild(confetti);
+        
+        // Limpiar el DOM
+        setTimeout(() => confetti.remove(), 5000);
+    }
+}
+
 export function renderAchievements() {
     const list = $('achList');
     if (!list) return;
@@ -178,8 +194,51 @@ export function showWin() {
     }
     if ($('finalTime')) $('finalTime').textContent = state.seconds;
     $('winModal').style.display = "flex"; 
+
+    // --- AÑADE ESTA LÍNEA AQUÍ ---
+    launchConfetti(); 
+    // -----------------------------
 }
 
 export function showLose() { 
     $('loseModal').style.display = "flex"; 
+}
+
+// js/ui.js
+import * as Storage from './storage.js'; // Asegúrate de que esta línea esté arriba
+
+export function renderStats() {
+    // Usamos directamente Storage.stats para evitar el error de undefined
+    const s = Storage.stats; 
+    const container = document.getElementById('statsContainer');
+    if (!container) return;
+
+    // Si por algún motivo stats no cargó, ponemos valores a 0
+    const gamesPlayed = s ? s.gamesPlayed : 0;
+    const wins = s ? s.wins : 0;
+    const bombs = s ? s.bombsExploded : 0;
+    const currentStreak = s ? s.currentStreak : 0;
+    const maxStreak = s ? s.maxStreak : 0;
+
+    const winRate = gamesPlayed > 0 
+        ? ((wins / gamesPlayed) * 100).toFixed(1) 
+        : 0;
+
+    const data = [
+        { label: "Partidas", val: gamesPlayed, icon: "🎮" },
+        { label: "Victorias", val: wins, icon: "🏆" },
+        { label: "Win Rate", val: winRate + "%", icon: "📈" },
+        { label: "Bombas", val: bombs, icon: "💥" },
+        { label: "Racha Act.", val: currentStreak, icon: "🔥" },
+        { label: "Racha Máx.", val: maxStreak, icon: "⭐" }
+    ];
+
+    container.innerHTML = data.map(item => `
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1)">
+            <div style="font-size: 0.8em; color: #aaa;">${item.icon} ${item.label}</div>
+            <div style="font-size: 1.2em; font-weight: bold; color: #ffcc00;">${item.val}</div>
+        </div>
+    `).join('');
+
+    document.getElementById('statsModal').style.display = "flex";
 }

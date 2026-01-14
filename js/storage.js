@@ -1,5 +1,30 @@
 // js/storage.js
 
+export const stats = JSON.parse(localStorage.getItem("stats")) || {
+    gamesPlayed: 0,
+    wins: 0,
+    bombsExploded: 0,
+    currentStreak: 0,
+    maxStreak: 0
+};
+
+export function saveStats() {
+    localStorage.setItem("stats", JSON.stringify(stats));
+}
+
+export function updateStats(type, bombs = 0) {
+    stats.gamesPlayed++;
+    if (type === 'win') {
+        stats.wins++;
+        stats.currentStreak++;
+        if (stats.currentStreak > stats.maxStreak) stats.maxStreak = stats.currentStreak;
+    } else {
+        stats.bombsExploded += bombs;
+        stats.currentStreak = 0;
+    }
+    saveStats();
+}
+
 export const achievements = JSON.parse(localStorage.getItem("achievements")) || {
     beginner: false, intermediate: false, hard: false, expert: false,
     speed_demon: false, no_flags: false, survivor: false, perfect: false

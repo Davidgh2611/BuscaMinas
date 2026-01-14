@@ -23,6 +23,7 @@
         <br>
         <button id="btn-achievements">🎖️ Logros</button>
         <button id="btn-ranking">🏆 Ranking</button>
+        <button id="btn-stats">📊 Stats</button>
     </div>
 
     <div id="gameUI" class="screen">
@@ -67,6 +68,15 @@
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
+
+    <div id="statsModal" class="modal">
+    <div class="modalContent">
+        <h3>📊 Estadísticas Globales</h3>
+        <div id="statsContainer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin: 15px 0;">
+            </div>
+        <button onclick="document.getElementById('statsModal').style.display='none'">Cerrar</button>
+    </div>
+</div>
 
     <script type="module" src="js/main.js"></script>
 </body>
