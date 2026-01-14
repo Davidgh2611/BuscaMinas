@@ -1,4 +1,3 @@
-📊 Ventana visual del ranking 
-🥇 Ranking por dificultad 
-🏅 Medallas animadas 
-🌐 Ranking online (Firebase)
+<hr>📊 Ventana visual del ranking 
+<hr>🏅 Medallas animadas 
+<hr>🌐 Ranking online (Firebase)
