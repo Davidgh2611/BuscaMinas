@@ -1,15 +1,19 @@
 {
-  "name": "Buscaminas PRO",
-  "short_name": "MinasPRO",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#ffcc00",
+  "short_name": "BuscaminasPRO",
+  "name": "Buscaminas PRO: Edición Especial",
+  "description": "El clásico Buscaminas con skins modernos, modo blitz y ranking global.",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/523/523050.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#ffcc00",
+  "background_color": "#1e1e1e",
+  "orientation": "portrait-primary",
+  "categories": ["games", "entertainment"]
 }
