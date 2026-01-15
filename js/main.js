@@ -61,28 +61,33 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const userData = await DB.loginUser(u, p);
             
+            // Sincronización de estado global
             state.playerName = userData.username;
-            Storage.setCloudData(userData.achievements, userData.stats);
+            
+            // Si el login provee stats/logros, los cargamos
+            if (userData.achievements && userData.stats) {
+                Storage.setCloudData(userData.achievements, userData.stats);
+            }
             
             document.getElementById('auth-logged-out').style.display = 'none';
             document.getElementById('auth-logged-in').style.display = 'block';
             document.getElementById('display-username').textContent = userData.username;
             
             setGameLock(false); 
-            alert("🔓 Sesión iniciada. Tus logros están sincronizados.");
+            console.log("🔓 Sesión iniciada para: " + userData.username);
         } catch (e) {
             alert("❌ " + e.message);
         }
     });
 
     bind('btn-guest', () => {
-        state.playerName = null; 
+        state.playerName = "Invitado (Local)"; 
         document.getElementById('auth-logged-out').style.display = 'none';
         document.getElementById('auth-logged-in').style.display = 'block';
-        document.getElementById('display-username').textContent = "Invitado (Local)";
+        document.getElementById('display-username').textContent = state.playerName;
         
         setGameLock(false); 
-        console.log("Modo invitado: Los datos solo se guardarán localmente.");
+        console.log("Modo invitado: Los datos se guardarán bajo el nombre 'Invitado'.");
     });
 
     bind('btn-logout', () => {
@@ -128,19 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- DIFICULTADES ---
-    const startNormalGame = (s, m, e) => {
+    const startNormalGame = (s, m, e, modeName) => {
         state.isBlitz = false;
         state.isDuel = false;
+        state.currentMode = modeName; 
         Game.startGame(s, m, e);
     };
 
-    bind('btn-easy',   () => startNormalGame(8, 10, false));
-    bind('btn-medium', () => startNormalGame(12, 25, false));
-    bind('btn-hard',   () => startNormalGame(16, 50, false));
-    bind('btn-expert', () => startNormalGame(16, 50, true));
+    bind('btn-easy',   () => startNormalGame(8, 10, false, 'easy'));
+    bind('btn-medium', () => startNormalGame(12, 25, false, 'medium'));
+    bind('btn-hard',   () => startNormalGame(16, 50, false, 'hard'));
+    bind('btn-expert', () => startNormalGame(16, 50, true, 'expert'));
     
     bind('btn-history-modal', () => UI.renderHistory());
-    bind('btn-blitz', () => Game.startBlitz(10, 15));
+    bind('btn-blitz', () => {
+        state.currentMode = 'blitz'; 
+        Game.startBlitz(10, 15);
+    });
     bind('btn-achievements', UI.renderAchievements);
     bind('btn-ranking', UI.renderRanking);
     bind('btn-stats', UI.renderStats);
@@ -174,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (room) {
         state.isDuel = true;
         state.roomID = room;
+        state.currentMode = 'duel'; 
         document.getElementById('duel-header').style.display = 'flex';
         document.getElementById('duel-chat').style.display = 'flex';
         setGameLock(false);
@@ -199,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (size >= 8 && size <= 30 && mines < size * size) {
             document.getElementById('customModal').style.display = 'none';
             state.isBlitz = false;
+            state.currentMode = 'custom'; 
             Game.startGame(size, mines, false);
         }
     });

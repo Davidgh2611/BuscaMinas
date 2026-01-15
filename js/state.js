@@ -13,6 +13,10 @@ export const state = {
     flagsUsed: 0,
     lastConfig: {} , // Para reiniciar rápido
     history: [] ,// <--- AÑADE ESTO
+    
+    // --- USUARIO Y SESIÓN ---
+    playerName: null, 
+
     score: 0,
     opponentScore: 0,
     isDuel: false,

@@ -2,7 +2,26 @@
 const SUPABASE_URL = "https://slsydjcxfuxawinnyfdz.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bvs1GQADBZY_knrB7qdrgA_LO6NKwk5";
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Variable interna para el cliente
+let supabaseClient = null;
+
+/**
+ * Inicializa el cliente de Supabase si la librería está disponible.
+ */
+function initClient() {
+    if (supabaseClient) return supabaseClient;
+    
+    if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return supabaseClient;
+    }
+    
+    console.warn("Supabase no se ha cargado todavía. Reintentando en la próxima llamada...");
+    return null;
+}
+
+// Intento inicial
+initClient();
 
 // --- SISTEMA DE USUARIO Y CONTRASEÑA ---
 
@@ -10,17 +29,20 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
  * Registra un nuevo usuario en la tabla 'profiles'
  */
 export async function registerUser(username, password) {
+    const client = initClient();
+    if (!client) throw new Error("Base de datos no disponible. Verifica tu conexión.");
+
     // 1. Verificar si el usuario ya existe
-    const { data: existing } = await supabaseClient
+    const { data: existing } = await client
         .from('profiles')
         .select('username')
         .eq('username', username)
-        .single();
+        .maybeSingle(); 
 
     if (existing) throw new Error("El nombre de usuario ya está ocupado.");
 
     // 2. Insertar nuevo usuario con valores iniciales
-    const { error } = await supabaseClient
+    const { error } = await client
         .from('profiles')
         .insert([{ 
             username, 
@@ -37,7 +59,10 @@ export async function registerUser(username, password) {
  * Valida las credenciales y devuelve los datos del usuario
  */
 export async function loginUser(username, password) {
-    const { data, error } = await supabaseClient
+    const client = initClient();
+    if (!client) throw new Error("Base de datos no disponible.");
+
+    const { data, error } = await client
         .from('profiles')
         .select('*')
         .eq('username', username)
@@ -46,14 +71,17 @@ export async function loginUser(username, password) {
 
     if (error || !data) throw new Error("Usuario o contraseña incorrectos.");
     
-    return data; // Devuelve {username, achievements, stats...}
+    return data; 
 }
 
 /**
  * Sincroniza los logros y stats locales con la base de datos
  */
 export async function syncUserData(username, achievements, stats) {
-    const { error } = await supabaseClient
+    const client = initClient();
+    if (!client) return;
+
+    const { error } = await client
         .from('profiles')
         .update({ achievements, stats })
         .eq('username', username);
@@ -64,7 +92,10 @@ export async function syncUserData(username, achievements, stats) {
 // --- RANKING GLOBAL ---
 
 export async function saveGlobalScore(nombre, tiempo, categoria) {
-    const { data, error } = await supabaseClient
+    const client = initClient();
+    if (!client) return null;
+
+    const { data, error } = await client
         .from('rankings_global')
         .insert([{ nombre, tiempo, categoria }]);
 
@@ -76,7 +107,10 @@ export async function saveGlobalScore(nombre, tiempo, categoria) {
 }
 
 export async function getGlobalRankings(categoria) {
-    const { data, error } = await supabaseClient
+    const client = initClient();
+    if (!client) return [];
+
+    const { data, error } = await client
         .from('rankings_global')
         .select('*')
         .eq('categoria', categoria)
@@ -95,7 +129,10 @@ export async function getGlobalRankings(categoria) {
 let duelChannel = null;
 
 export function joinDuel(roomID, onMessageReceived) {
-    duelChannel = supabaseClient.channel(`duel_${roomID}`, {
+    const client = initClient();
+    if (!client) return;
+
+    duelChannel = client.channel(`duel_${roomID}`, {
         config: { broadcast: { self: false } }
     });
 

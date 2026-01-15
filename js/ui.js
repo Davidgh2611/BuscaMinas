@@ -39,25 +39,18 @@ export function renderAchievements() {
 
     // BASE DE DATOS EXTENDIDA DE LOGROS
     const badges = [
-        // --- Dificultad ---
         { key: "beginner", name: "🐣 Novato", desc: "Gana en modo Fácil." },
         { key: "intermediate", name: "🎖️ Veterano", desc: "Gana en modo Medio." },
         { key: "hard", name: "🔥 Leyenda", desc: "Gana en modo Difícil." },
         { key: "expert", name: "😈 Experto", desc: "Gana en modo Experto." },
-        
-        // --- Velocidad ---
         { key: "speed_demon", name: "⚡ Flash", desc: "Gana en menos de 30s." },
         { key: "sonic", name: "🌀 Supersónico", desc: "Gana en menos de 15s." },
         { key: "blitz_master", name: "🧨 Maestro Blitz", desc: "Gana en el modo Blitz." },
         { key: "patience", name: "🐢 Zen", desc: "Gana una partida de más de 5 minutos." },
-
-        // --- Habilidad / Estilo ---
         { key: "no_flags", name: "🧠 Sin Banderas", desc: "Gana sin marcar ninguna mina." },
         { key: "perfectionist", name: "💯 Perfecto", desc: "Gana sin revelar ninguna mina por error." },
         { key: "lucky_guess", name: "🎲 Suerte Pura", desc: "Gana en menos de 10 clicks totales." },
         { key: "chord_king", name: "🎹 Pianista", desc: "Realiza 20 'chords' en una partida." },
-
-        // --- Acumulativos / Estadísticas ---
         { key: "miner_100", name: "⛏️ Minero", desc: "Limpia 100 minas en total." },
         { key: "miner_1000", name: "💎 Magnate", desc: "Limpia 1000 minas en total." },
         { key: "survivor", name: "🛡️ Superviviente", desc: "Revela 50 casillas sin morir." },
@@ -71,7 +64,6 @@ export function renderAchievements() {
         const li = document.createElement("li");
         li.className = isEarned ? "ach-item earned" : "ach-item locked";
         
-        // Estructura mejorada para CSS de cuadrícula
         li.innerHTML = `
             <div class="ach-icon-container">${isEarned ? '✅' : '🔒'}</div>
             <div class="ach-content">
@@ -113,8 +105,11 @@ export async function renderGlobalRank(cat = 'easy') {
     const container = $('global-rank-container');
     if (!container) return;
     container.innerHTML = `<div class="loading">Cargando mejores tiempos...</div>`;
+    
+    // Ajustado para usar la función correcta de db.js
     const scores = await DB.getGlobalRankings(cat);
     container.innerHTML = "";
+    
     if (scores.length === 0) {
         container.innerHTML = `<p style="text-align:center; padding:20px;">No hay récords en ${cat.toUpperCase()}.</p>`;
     } else {
@@ -124,7 +119,7 @@ export async function renderGlobalRank(cat = 'easy') {
             <thead><tr><th>#</th><th>Nombre</th><th>Tiempo</th><th>Fecha</th></tr></thead>
             <tbody>
                 ${scores.map((s, i) => `
-                    <tr><td>${i + 1}</td><td style="color:#ffcc00;">${s.nombre}</td><td>${s.tiempo}s</td><td>${new Date(s.fecha).toLocaleDateString()}</td></tr>
+                    <tr><td>${i + 1}</td><td style="color:#ffcc00;">${s.nombre}</td><td>${s.tiempo}s</td><td>${new Date(s.created_at || s.fecha).toLocaleDateString()}</td></tr>
                 `).join('')}
             </tbody>`;
         container.appendChild(table);
@@ -288,10 +283,24 @@ export function playSound(type) {
     }
 }
 
-export function showWin() { 
-    if ($('finalTime')) $('finalTime').textContent = state.seconds;
+export async function showWin() { 
+    const tiempo = state.seconds;
+    const modo = state.currentMode || 'easy';
+    
+    if ($('finalTime')) $('finalTime').textContent = tiempo;
     $('winModal').style.display = "flex"; 
     launchConfetti(); 
+
+    // GESTIÓN AUTOMÁTICA DE NOMBRE
+    let nombreParaRanking = state.playerName;
+
+    // Si es invitado o está vacío, asignamos "Invitado" automáticamente
+    if (!nombreParaRanking || nombreParaRanking === "Invitado (Local)") {
+        nombreParaRanking = "Invitado";
+    }
+
+    // Guardar usando la función corregida de db.js
+    await DB.saveGlobalScore(nombreParaRanking, tiempo, modo);
 }
 
 export function showLose() { 
