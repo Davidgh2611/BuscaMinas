@@ -31,43 +31,58 @@ export function updateDisplay() {
     }
 }
 
-// --- RANKING GLOBAL (SUPABASE) ---
-export async function renderGlobalRank(cat = 'easy') {
-    const container = $('global-rank-container');
-    if (!container) return;
-    
-    container.innerHTML = `<div class="loading">Cargando mejores tiempos...</div>`;
-    
-    const scores = await DB.getGlobalRankings(cat);
-    
-    container.innerHTML = "";
-    if (scores.length === 0) {
-        container.innerHTML = `<p style="text-align:center; padding:20px;">No hay récords en la categoría ${cat.toUpperCase()} todavía. ¡Sé el primero!</p>`;
-    } else {
-        const table = document.createElement('table');
-        table.className = "ranking-table";
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Nombre</th>
-                    <th>Tiempo</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${scores.map((s, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td style="color: #ffcc00; font-weight: bold;">${s.nombre}</td>
-                        <td>${s.tiempo}s</td>
-                        <td style="font-size: 0.8em; color: #888;">${new Date(s.fecha).toLocaleDateString()}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
+// --- RENDERS DE LOGROS (EXTENDIDO) ---
+export function renderAchievements() {
+    const list = $('achList');
+    if (!list) return;
+    list.innerHTML = "";
+
+    // BASE DE DATOS EXTENDIDA DE LOGROS
+    const badges = [
+        // --- Dificultad ---
+        { key: "beginner", name: "🐣 Novato", desc: "Gana en modo Fácil." },
+        { key: "intermediate", name: "🎖️ Veterano", desc: "Gana en modo Medio." },
+        { key: "hard", name: "🔥 Leyenda", desc: "Gana en modo Difícil." },
+        { key: "expert", name: "😈 Experto", desc: "Gana en modo Experto." },
+        
+        // --- Velocidad ---
+        { key: "speed_demon", name: "⚡ Flash", desc: "Gana en menos de 30s." },
+        { key: "sonic", name: "🌀 Supersónico", desc: "Gana en menos de 15s." },
+        { key: "blitz_master", name: "🧨 Maestro Blitz", desc: "Gana en el modo Blitz." },
+        { key: "patience", name: "🐢 Zen", desc: "Gana una partida de más de 5 minutos." },
+
+        // --- Habilidad / Estilo ---
+        { key: "no_flags", name: "🧠 Sin Banderas", desc: "Gana sin marcar ninguna mina." },
+        { key: "perfectionist", name: "💯 Perfecto", desc: "Gana sin revelar ninguna mina por error." },
+        { key: "lucky_guess", name: "🎲 Suerte Pura", desc: "Gana en menos de 10 clicks totales." },
+        { key: "chord_king", name: "🎹 Pianista", desc: "Realiza 20 'chords' en una partida." },
+
+        // --- Acumulativos / Estadísticas ---
+        { key: "miner_100", name: "⛏️ Minero", desc: "Limpia 100 minas en total." },
+        { key: "miner_1000", name: "💎 Magnate", desc: "Limpia 1000 minas en total." },
+        { key: "survivor", name: "🛡️ Superviviente", desc: "Revela 50 casillas sin morir." },
+        { key: "boom_collector", name: "💥 Kamikaze", desc: "Explota 50 veces." },
+        { key: "streak_3", name: "🔥 Racha", desc: "Gana 3 partidas seguidas." },
+        { key: "night_owl", name: "🦉 Trasnochador", desc: "Juega una partida después de medianoche." }
+    ];
+
+    badges.forEach(ach => {
+        const isEarned = Storage.achievements[ach.key];
+        const li = document.createElement("li");
+        li.className = isEarned ? "ach-item earned" : "ach-item locked";
+        
+        // Estructura mejorada para CSS de cuadrícula
+        li.innerHTML = `
+            <div class="ach-icon-container">${isEarned ? '✅' : '🔒'}</div>
+            <div class="ach-content">
+                <strong>${ach.name}</strong>
+                <p>${ach.desc}</p>
+            </div>
         `;
-        container.appendChild(table);
-    }
+        list.appendChild(li);
+    });
+    
+    $('achModal').style.display = "flex";
 }
 
 // --- NOTIFICACIONES ---
@@ -93,13 +108,87 @@ export function showAchievementNotification(name) {
     }, 4000);
 }
 
-// --- TABLERO ---
+// --- RANKINGS Y ESTADÍSTICAS ---
+export async function renderGlobalRank(cat = 'easy') {
+    const container = $('global-rank-container');
+    if (!container) return;
+    container.innerHTML = `<div class="loading">Cargando mejores tiempos...</div>`;
+    const scores = await DB.getGlobalRankings(cat);
+    container.innerHTML = "";
+    if (scores.length === 0) {
+        container.innerHTML = `<p style="text-align:center; padding:20px;">No hay récords en ${cat.toUpperCase()}.</p>`;
+    } else {
+        const table = document.createElement('table');
+        table.className = "ranking-table";
+        table.innerHTML = `
+            <thead><tr><th>#</th><th>Nombre</th><th>Tiempo</th><th>Fecha</th></tr></thead>
+            <tbody>
+                ${scores.map((s, i) => `
+                    <tr><td>${i + 1}</td><td style="color:#ffcc00;">${s.nombre}</td><td>${s.tiempo}s</td><td>${new Date(s.fecha).toLocaleDateString()}</td></tr>
+                `).join('')}
+            </tbody>`;
+        container.appendChild(table);
+    }
+}
+
+export function renderRanking() {
+    const list = $('rankList');
+    if (!list) return;
+    list.innerHTML = "";
+    const cats = { easy: "🟢 FÁCIL", medium: "🟡 MEDIO", hard: "🔴 DIFÍCIL", expert: "😈 EXPERTO", blitz: "⚡ BLITZ" };
+    Object.entries(cats).forEach(([key, label]) => {
+        const times = Storage.rankings[key] || [];
+        list.innerHTML += `<div class="rank-cat-header"><b>${label}</b></div>`;
+        list.innerHTML += times.length 
+            ? times.map((t, i) => `<div class="rank-entry">${i+1}. ${t} segundos</div>`).join('') 
+            : "<div class='rank-empty'>Sin récords locales</div>";
+    });
+    $('rankModal').style.display = "flex";
+}
+
+export function renderHistory() {
+    const history = Storage.getHistory();
+    const body = $('historyBody');
+    if (!body) return;
+    body.innerHTML = history.map(h => `
+        <tr class="history-row">
+            <td>${h.fecha}</td>
+            <td>${h.dificultad.toUpperCase()}</td>
+            <td>${h.tiempo}s</td>
+            <td style="color: ${h.resultado === 'Victoria' ? '#2de1af' : '#ff4444'}">${h.resultado}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="4">No hay partidas registradas</td></tr>';
+    $('historyModal').style.display = "flex";
+}
+
+export function renderStats() {
+    const s = Storage.stats; 
+    const container = $('statsContainer');
+    if (!container) return;
+    const winRate = s.gamesPlayed > 0 ? ((s.wins / s.gamesPlayed) * 100).toFixed(1) : 0;
+    const data = [
+        { label: "Partidas", val: s.gamesPlayed, icon: "🎮" },
+        { label: "Victorias", val: s.wins, icon: "🏆" },
+        { label: "Win Rate", val: winRate + "%", icon: "📈" },
+        { label: "Bombas", val: s.bombsExploded, icon: "💥" },
+        { label: "Racha Act.", val: s.currentStreak, icon: "🔥" },
+        { label: "Racha Máx.", val: s.maxStreak, icon: "⭐" }
+    ];
+    container.innerHTML = data.map(item => `
+        <div class="stat-card">
+            <div class="stat-label">${item.icon} ${item.label}</div>
+            <div class="stat-value">${item.val}</div>
+        </div>
+    `).join('');
+    $('statsModal').style.display = "flex";
+}
+
+// --- GESTIÓN DE TABLERO Y CELDAS ---
 export function createBoard(size, onClick, onRightClick) {
     const boardEl = $('board');
     boardEl.innerHTML = "";
     boardEl.style.gridTemplateColumns = `repeat(${size}, 38px)`;
     state.cellsDOM = [];
-
     for (let i = 0; i < size * size; i++) {
         const x = Math.floor(i / size);
         const y = i % size;
@@ -117,7 +206,6 @@ export function renderCell(x, y, value) {
     const index = x * state.SIZE + y;
     const cell = state.cellsDOM[index];
     if (!cell) return;
-
     cell.classList.add("revealed");
     if (value === "💣") {
         cell.textContent = getMineIcon();
@@ -174,83 +262,6 @@ export function launchConfetti() {
     }
 }
 
-// --- MODALES Y RENDERS ---
-export function renderAchievements() {
-    const list = $('achList');
-    if (!list) return;
-    list.innerHTML = "";
-    const badges = [
-        { key: "beginner", name: "🐣 Novato", desc: "Gana en modo Fácil." },
-        { key: "intermediate", name: "🎖️ Veterano", desc: "Gana en modo Medio." },
-        { key: "hard", name: "🔥 Leyenda", desc: "Gana en modo Difícil." },
-        { key: "expert", name: "😈 Experto", desc: "Gana en modo Experto." },
-        { key: "speed_demon", name: "⚡ Flash", desc: "Gana en menos de 30s o en Blitz." },
-        { key: "no_flags", name: "🧠 Sin Banderas", desc: "Gana sin usar banderas." },
-        { key: "survivor", name: "🛡️ Superviviente", desc: "Revela 50 casillas." },
-        { key: "perfect", name: "💯 Perfecto", desc: "Gana una partida." }
-    ];
-    badges.forEach(ach => {
-        const isEarned = Storage.achievements[ach.key];
-        const li = document.createElement("li");
-        li.className = isEarned ? "ach-item earned" : "ach-item locked";
-        li.innerHTML = `<strong>${isEarned ? '✅' : '🔒'} ${ach.name}</strong><br><small>${ach.desc}</small>`;
-        list.appendChild(li);
-    });
-    $('achModal').style.display = "flex";
-}
-
-export function renderRanking() {
-    const list = $('rankList');
-    if (!list) return;
-    list.innerHTML = "";
-    const cats = { easy: "🟢 FÁCIL", medium: "🟡 MEDIO", hard: "🔴 DIFÍCIL", expert: "😈 EXPERTO", blitz: "⚡ BLITZ" };
-    Object.entries(cats).forEach(([key, label]) => {
-        const times = Storage.rankings[key] || [];
-        list.innerHTML += `<div class="rank-cat-header"><b>${label}</b></div>`;
-        list.innerHTML += times.length 
-            ? times.map((t, i) => `<div class="rank-entry">${i+1}. ${t} segundos</div>`).join('') 
-            : "<div class='rank-empty'>Sin récords locales</div>";
-    });
-    $('rankModal').style.display = "flex";
-}
-
-export function renderHistory() {
-    const history = Storage.getHistory();
-    const body = $('historyBody');
-    if (!body) return;
-    body.innerHTML = history.map(h => `
-        <tr class="history-row">
-            <td>${h.fecha}</td>
-            <td>${h.dificultad.toUpperCase()}</td>
-            <td>${h.tiempo}s</td>
-            <td style="color: ${h.resultado === 'Victoria' ? '#2de1af' : '#ff4444'}">${h.resultado}</td>
-        </tr>
-    `).join('') || '<tr><td colspan="4">No hay partidas registradas</td></tr>';
-    $('historyModal').style.display = "flex";
-}
-
-export function renderStats() {
-    const s = Storage.stats; 
-    const container = $('statsContainer');
-    if (!container) return;
-    const winRate = s.gamesPlayed > 0 ? ((s.wins / s.gamesPlayed) * 100).toFixed(1) : 0;
-    const data = [
-        { label: "Partidas", val: s.gamesPlayed, icon: "🎮" },
-        { label: "Victorias", val: s.wins, icon: "🏆" },
-        { label: "Win Rate", val: winRate + "%", icon: "📈" },
-        { label: "Bombas", val: s.bombsExploded, icon: "💥" },
-        { label: "Racha Act.", val: s.currentStreak, icon: "🔥" },
-        { label: "Racha Máx.", val: s.maxStreak, icon: "⭐" }
-    ];
-    container.innerHTML = data.map(item => `
-        <div class="stat-card">
-            <div class="stat-label">${item.icon} ${item.label}</div>
-            <div class="stat-value">${item.val}</div>
-        </div>
-    `).join('');
-    $('statsModal').style.display = "flex";
-}
-
 // --- UTILIDADES ---
 export function getMineIcon() {
     const skin = document.body.className;
@@ -292,15 +303,11 @@ export function showLose() {
     $('loseModal').style.display = "flex"; 
 }
 
-// js/ui.js
-
 export function updateDuelScore() {
     const myScoreEl = document.getElementById('my-score');
     const oppScoreEl = document.getElementById('opp-score');
-    
     if (myScoreEl) {
         myScoreEl.textContent = state.score;
-        // Animación de pulso cuando sube la puntuación
         myScoreEl.style.transform = "scale(1.2)";
         setTimeout(() => myScoreEl.style.transform = "scale(1)", 200);
     }
@@ -310,37 +317,21 @@ export function updateDuelScore() {
     }
 }
 
-// Función para enviar reacción
 export function sendReaction(text) {
     if (!state.isDuel) return;
-    
-    // 1. Enviamos por Supabase
-    import('./db.js').then(db => {
-        db.sendMove({ type: 'chat', text: text });
-    });
-    
-    // 2. Opcional: mostrarla también en nuestra pantalla
-    showReaction(text, "my-bubble");
+    import('./db.js').then(db => db.sendMove({ type: 'chat', text: text }));
+    showReaction(text);
 }
 
-// Función para mostrar la burbuja en pantalla
 export function showReaction(text) {
     const bubble = document.getElementById('chat-bubble-rival');
+    if (!bubble) return;
     bubble.textContent = text;
     bubble.style.display = 'block';
-    
-    // Reiniciar animación
     bubble.style.animation = 'none';
-    bubble.offsetHeight; // Truco para resetear el DOM
+    bubble.offsetHeight;
     bubble.style.animation = 'bubblePop 2s ease-out forwards';
-    
     setTimeout(() => { bubble.style.display = 'none'; }, 2000);
-}
-
-// Ejemplo en ui.js o game.js
-if (state.isDuel) {
-    document.getElementById('duel-header').style.display = 'flex';
-    document.getElementById('duel-chat').style.display = 'flex';
 }
 
 export function showDuelHeader(active) {
@@ -350,10 +341,7 @@ export function showDuelHeader(active) {
 
 export function runReplay() {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    state.cellsDOM.forEach(cell => {
-        cell.textContent = "";
-        cell.className = "cell";
-    });
+    state.cellsDOM.forEach(cell => { cell.textContent = ""; cell.className = "cell"; });
     state.history.forEach((move, index) => {
         setTimeout(() => {
             const cell = state.cellsDOM[move.x * state.SIZE + move.y];

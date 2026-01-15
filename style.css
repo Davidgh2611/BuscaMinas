@@ -536,3 +536,48 @@ button:active {
     80% { transform: scale(1) translateY(-30px); opacity: 1; }
     100% { transform: scale(0.8) translateY(-50px); opacity: 0; }
 }
+
+.special-btn.disabled {
+    filter: grayscale(1);
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+#achList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    max-height: 400px; /* Altura fija para permitir scroll */
+    overflow-y: auto;
+    padding: 10px;
+    list-style: none;
+}
+
+.ach-item {
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    text-align: center;
+    transition: 0.3s;
+    border: 1px solid transparent;
+}
+
+.ach-item.earned {
+    border-color: #ffcc00;
+    background: rgba(255, 204, 0, 0.1);
+}
+
+.ach-item.locked {
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+
+.ach-info strong {
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.ach-info small {
+    font-size: 0.7rem;
+    color: #aaa;
+}

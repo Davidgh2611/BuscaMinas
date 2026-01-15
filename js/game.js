@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import * as UI from './ui.js';
 import * as Storage from './storage.js';
-import * as DB from './db.js'; // Importamos la conexión a Supabase
+import * as DB from './db.js';
 
 export function startGame(size, mines, exp) {
     state.SIZE = size;
@@ -10,6 +10,7 @@ export function startGame(size, mines, exp) {
     state.lastConfig = { size, mines, exp };
     state.cellsRevealedCount = 0;
     state.history = []; 
+    state.chordsCount = 0; // Para el logro de "Pianista"
     
     state.board = [...Array(size)].map(() => Array(size).fill(0));
     state.revealed = [...Array(size)].map(() => Array(size).fill(false));
@@ -52,11 +53,20 @@ export function startBlitz(size, mines) {
 
 function clickCell(x, y) {
     if (state.gameOver || state.flagged[x][y]) return;
-    if (state.firstClick) { placeMines(x, y); state.firstClick = false; }
+    
+    if (state.firstClick) { 
+        placeMines(x, y); 
+        state.firstClick = false; 
+    }
     
     state.history.push({ x, y, type: 'reveal' });
 
-    if (state.revealed[x][y]) { chord(x, y); checkWin(); return; }
+    if (state.revealed[x][y]) { 
+        chord(x, y); 
+        checkWin(); 
+        return; 
+    }
+    
     reveal(x, y);
     checkWin();
     UI.createParticles(x, y);
@@ -72,13 +82,17 @@ function reveal(x, y) {
         UI.updateDisplay();
     }
 
+    // LOGRO: Superviviente (Revelar 50 casillas)
     if (state.cellsRevealedCount === 50) {
         Storage.unlockAchievement("survivor", "Superviviente");
     }
     
     UI.renderCell(x, y, state.board[x][y]);
     
-    if (state.board[x][y] === "💣") { lose(x, y); return; }
+    if (state.board[x][y] === "💣") { 
+        lose(x, y); 
+        return; 
+    }
     
     if (state.board[x][y] === 0 && !state.expert) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -98,8 +112,7 @@ function reveal(x, y) {
 function toggleFlag(x, y) {
     if (state.gameOver || state.revealed[x][y]) return;
     const cell = state.cellsDOM[x * state.SIZE + y];
-    state.history.push({ x, y, yype: 'flag' });
-
+    
     if (!state.flagged[x][y] && cell.textContent !== "❓") {
         state.flagged[x][y] = true;
         state.flagsUsed++;
@@ -119,7 +132,10 @@ async function checkWin() {
     let win = true;
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
-            if (state.board[x][y] !== "💣" && !state.revealed[x][y]) { win = false; break; }
+            if (state.board[x][y] !== "💣" && !state.revealed[x][y]) { 
+                win = false; 
+                break; 
+            }
         }
     }
 
@@ -130,44 +146,65 @@ async function checkWin() {
 
         let cat = "easy";
         let achKey = "beginner";
-        let achName = "Victoria en Fácil";
+        let achName = "🐣 Novato";
 
         if (state.isBlitz) {
             cat = "blitz";
-            achKey = "speed_demon";
-            achName = "Maestro Blitz";
+            achKey = "blitz_master";
+            achName = " Maestro Blitz";
+            Storage.unlockAchievement("blitz_master", achName);
         } else {
             if (state.SIZE === 12) {
-                cat = "medium"; achKey = "intermediate"; achName = "Victoria en Medio";
+                cat = "medium"; achKey = "intermediate"; achName = "🎖️ Veterano";
             } else if (state.SIZE === 16) {
                 if (state.expert) {
-                    cat = "expert"; achKey = "expert"; achName = "Victoria en Experto";
+                    cat = "expert"; achKey = "expert"; achName = "😈 Experto";
                 } else {
-                    cat = "hard"; achKey = "hard"; achName = "Victoria en Difícil";
+                    cat = "hard"; achKey = "hard"; achName = "🔥 Leyenda";
                 }
             }
         }
 
+        // --- GESTIÓN DE LOGROS DE VICTORIA ---
+        Storage.unlockAchievement(achKey, achName);
+        Storage.unlockAchievement("perfect", "💯 Perfecto");
+
+        // LOGRO: Flash (Menos de 30s)
+        if (state.seconds < 30) Storage.unlockAchievement("speed_demon", "⚡ Flash");
+        
+        // LOGRO: Supersónico (Menos de 15s)
+        if (state.seconds < 15) Storage.unlockAchievement("sonic", "🌀 Supersónico");
+
+        // LOGRO: Sin Banderas
+        if (state.flagsUsed === 0) Storage.unlockAchievement("no_flags", "🧠 Sin Banderas");
+
+        // LOGRO: Zen (Más de 5 min)
+        if (state.seconds > 300) Storage.unlockAchievement("patience", "🐢 Zen");
+
+        // LOGRO: Suerte Pura (Menos de 10 clicks)
+        const totalClicks = state.history.filter(h => h.type === 'reveal').length;
+        if (totalClicks < 10) Storage.unlockAchievement("lucky_guess", "🎲 Suerte Pura");
+
+        // LOGRO: Racha de 3
+        if (Storage.stats.currentStreak >= 3) Storage.unlockAchievement("streak_3", "🔥 Racha");
+
+        // LOGRO: Trasnochador (Partida después de las 00:00)
+        const hour = new Date().getHours();
+        if (hour >= 0 && hour < 5) Storage.unlockAchievement("night_owl", "🦉 Trasnochador");
+
         Storage.saveToHistory({ cat, seconds: state.seconds, win: true });
         Storage.saveScore(cat, state.seconds);
-
-        // Desbloquear Logros Locales
-        Storage.unlockAchievement(achKey, achName);
-        Storage.unlockAchievement("perfect", "Partida Perfecta");
-        if (!state.isBlitz && state.seconds < 30) Storage.unlockAchievement("speed_demon", "Flash");
-        if (state.flagsUsed === 0) Storage.unlockAchievement("no_flags", "Sin Banderas");
         
         UI.showWin();
 
-        // --- NUEVA LÓGICA GLOBAL (SUPABASE) ---
+        // --- SUBIDA A RANKING GLOBAL ---
         setTimeout(async () => {
-            const userName = prompt("¡Increíble! Introduce tu nombre para el Ranking Global:");
+            const userName = prompt("¡Victoria! Tu nombre para el Ranking Global:");
             if (userName && userName.trim() !== "") {
-                const finalTime = state.seconds;
-                await DB.saveGlobalScore(userName.trim(), finalTime, cat);
-                UI.showAchievementNotification("¡Puntuación subida al Ranking!");
+                await DB.saveGlobalScore(userName.trim(), state.seconds, cat);
+                UI.showAchievementNotification("🌍 ¡Récord Global actualizado!");
             }
-        }, 1200); // Esperamos a que termine la animación de victoria
+        }, 1200);
     }
 }
 
@@ -181,6 +218,8 @@ function placeMines(sx, sy) {
         state.board[x][y] = "💣"; 
         p++;
     }
+    
+    // Calcular números
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
             if (state.board[x][y] === "💣") continue;
@@ -204,7 +243,12 @@ function chord(x, y) {
             if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE && state.flagged[nx][ny]) f++;
         }
     }
+    
     if (f === state.board[x][y]) {
+        state.chordsCount++;
+        // LOGRO: Pianista (20 chords)
+        if (state.chordsCount === 20) Storage.unlockAchievement("chord_king", "🎹 Pianista");
+
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
@@ -219,45 +263,15 @@ function chord(x, y) {
     }
 }
 
-// Fragmento para js/game.js dentro de la función handleCellClick
-
-function handleCellClick(x, y) {
-    if (state.gameOver) return;
-    
-    // Si es modo duelo, avisamos al otro
-    if (state.isDuel) {
-        DB.sendMove({ x, y, type: 'reveal', playerName: state.playerName });
-    }
-
-    const cellValue = state.board[x][y];
-    if (cellValue === "💣") {
-        // En duelo, una bomba te resta puntos pero no termina el juego de inmediato
-        state.score = Math.max(0, state.score - 100);
-        UI.renderCell(x, y, "💣");
-        UI.updateDuelScore();
-    } else {
-        // Celda segura: +10 puntos
-        state.score += 10;
-        revealCell(x, y);
-        UI.updateDuelScore();
-    }
-}
-
-// Función que se ejecuta cuando recibimos el movimiento del rival
-export function handleOpponentMove(move) {
-    // Marcamos visualmente lo que hizo el rival (ej. un borde rojo)
-    const cell = state.cellsDOM[move.x * state.SIZE + move.y];
-    cell.style.outline = "2px solid #ff4444"; 
-    
-    // Actualizamos su puntuación lógica
-    state.opponentScore += 10; 
-    UI.updateDuelScore();
-}
-
 function lose(hitX, hitY) {
     state.gameOver = true;
     clearInterval(state.timer);
+    
+    // Actualizar estadísticas globales
     Storage.updateStats('lose', 1); 
+    
+    // LOGRO: Kamikaze (Acumular 50 muertes)
+    if (Storage.stats.bombsExploded >= 50) Storage.unlockAchievement("boom_collector", "💥 Kamikaze");
 
     let cat = state.isBlitz ? "blitz" : (state.SIZE === 8 ? "easy" : "other");
     Storage.saveToHistory({ cat, seconds: state.seconds, win: false });
@@ -280,8 +294,7 @@ function lose(hitX, hitY) {
                 cell.classList.add('revealed', 'bomb-explosion');
                 cell.textContent = UI.getMineIcon(); 
             }
-            document.getElementById('board').classList.add('shake-animation');
-            if (typeof UI.playSound === 'function') UI.playSound('boom');
+            if (i === 0) UI.playSound('boom');
             if (i === mines.length - 1) {
                 setTimeout(() => UI.showLose(), 800);
             }
