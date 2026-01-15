@@ -31,6 +31,34 @@ export function updateDisplay() {
     }
 }
 
+export function showAchievementNotification(name) {
+    // Eliminar notificaciones previas para que no se amontonen
+    const oldNotif = document.querySelector('.achievement-notification');
+    if (oldNotif) oldNotif.remove();
+
+    const notif = document.createElement("div");
+    notif.className = "achievement-notification"; // Usamos clase CSS
+    
+    notif.innerHTML = `
+        <div class="ach-icon">🎖️</div>
+        <div class="ach-text">
+            <small>LOGRO DESBLOQUEADO</small>
+            <strong>${name}</strong>
+        </div>
+    `;
+
+    document.body.appendChild(notif);
+
+    // Sonido si existe la función
+    if (typeof playSound === 'function') playSound('click');
+
+    // Auto-eliminar después de 4 segundos
+    setTimeout(() => {
+        notif.style.transform = 'translateX(150%)';
+        setTimeout(() => notif.remove(), 500);
+    }, 4000);
+}
+
 // --- TABLERO ---
 export function createBoard(size, onClick, onRightClick) {
     const boardEl = $('board');

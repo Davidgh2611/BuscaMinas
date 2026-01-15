@@ -40,23 +40,16 @@ export function saveAch() {
 // ya que UI importa Storage y Storage importa UI.
 // js/storage.js
 
+// Dentro de unlockAchievement en storage.js
 export async function unlockAchievement(key, name) {
-    // Si el logro ya existe, no hacemos nada
     if (achievements[key]) return;
-
-    console.log(`¡Logro detectado: ${name}! Guardando...`);
     
     achievements[key] = true;
     saveAch();
-
-    // Importación dinámica para romper el bucle circular y mostrar la notificación
-    try {
-        const UI = await import('./ui.js');
-        UI.showAchievementNotification(name);
-        if (typeof UI.playSound === 'function') UI.playSound('click'); 
-    } catch (err) {
-        console.error("Error al cargar la notificación de UI:", err);
-    }
+    
+    // Importamos UI justo cuando lo necesitamos
+    const UI = await import('./ui.js');
+    UI.showAchievementNotification(name);
 }
 // --- RANKINGS (MEJORES TIEMPOS) ---
 export let rankings = JSON.parse(localStorage.getItem("rankings")) || {

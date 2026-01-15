@@ -262,22 +262,43 @@ button:active {
     to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
 
-/* Asegura que la notificación de logro se vea por encima de todo */
 .achievement-notification {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 9999 !important; /* Prioridad máxima */
-    background: #333;
-    border-left: 5px solid #ffcc00;
-    padding: 15px;
-    border-radius: 8px;
+    background: #222;
     color: white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    animation: slideInAchievement 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border-left: 5px solid #ffcc00;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    z-index: 10000 !important; /* Por encima de TODO */
+    min-width: 200px;
+    animation: achSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    pointer-events: none; /* Que no estorbe si haces clic cerca */
 }
 
-@keyframes slideInAchievement {
-    from { transform: translateX(120%); }
-    to { transform: translateX(0); }
+.ach-icon {
+    font-size: 1.5rem;
+}
+
+.ach-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.ach-text small {
+    font-size: 0.65rem;
+    color: #ffcc00;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+@keyframes achSlideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }

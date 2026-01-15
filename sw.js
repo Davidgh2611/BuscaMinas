@@ -1,24 +1,20 @@
-const CACHE_NAME = 'buscaminas-v1';
-// Solo incluimos lo estrictamente necesario y verificado
-const assets = [
-  './',
-  './index.html',
-  './style.css',      // Revisa si está en la raíz o en carpeta /css
-  './js/main.js',
-  './manifest.json'
-];
+const CACHE_NAME = 'buscaminas-v2';
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // Usamos addAll pero con un catch para ver qué archivo falla
-      return cache.addAll(assets).catch(err => console.error("Fallo en cache:", err));
-    })
-  );
+// Durante el desarrollo, mejor no cachear agresivamente para evitar errores
+self.addEventListener('install', () => {
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(res => res || fetch(e.request))
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
+// Estrategia: Intentar red, si falla buscar en caché
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });
