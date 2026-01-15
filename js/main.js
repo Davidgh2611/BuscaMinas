@@ -2,27 +2,135 @@ import * as UI from './ui.js';
 import * as Game from './game.js';
 import { state } from './state.js';
 import * as DB from './db.js';
+import * as Storage from './storage.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Inicializando Buscaminas Pro con Ranking Global...");
+    console.log("Inicializando Buscaminas Pro con Sistema de Cuentas...");
 
     const bind = (id, fn) => {
         const el = document.getElementById(id);
         if (el) el.onclick = fn;
     };
 
-    // --- SISTEMA DE SKINS ---
-    bind('skin-clasico', () => UI.setSkin('clasico'));
-    bind('skin-moderno', () => UI.setSkin('moderno'));
-    bind('skin-minimal', () => UI.setSkin('minimal'));
-    bind('skin-winter', () => UI.setSkin('winter'));
-    bind('skin-halloween', () => UI.setSkin('halloween'));
-    bind('skin-cyberpunk', () => UI.setSkin('cyberpunk'));
+    // Función para bloquear/desbloquear el acceso al juego y mostrar el menú principal
+    const setGameLock = (locked) => {
+        const gameMenu = document.getElementById('main-game-menu');
+        const targets = ['.difficulty-group', '.meta-buttons', '#duel-setup'];
+        
+        if (locked) {
+            if (gameMenu) gameMenu.style.display = 'none';
+            targets.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) el.classList.add('game-locked');
+            });
+        } else {
+            if (gameMenu) {
+                gameMenu.style.display = 'block';
+                gameMenu.style.opacity = '1';
+            }
+            targets.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) el.classList.remove('game-locked');
+            });
+        }
+    };
+
+    // Bloquear al inicio hasta que elija una opción
+    setGameLock(true);
+
+    // --- SISTEMA DE AUTENTICACIÓN ---
+    
+    bind('btn-register', async () => {
+        const u = document.getElementById('auth-username').value.trim();
+        const p = document.getElementById('auth-password').value.trim();
+        if (!u || !p) return alert("Por favor, rellena usuario y contraseña.");
+
+        try {
+            await DB.registerUser(u, p);
+            alert("✅ Registro exitoso. ¡Ya puedes iniciar sesión!");
+        } catch (e) {
+            alert("❌ Error: " + e.message);
+        }
+    });
+
+    bind('btn-login', async () => {
+        const u = document.getElementById('auth-username').value.trim();
+        const p = document.getElementById('auth-password').value.trim();
+        if (!u || !p) return alert("Introduce tus credenciales.");
+
+        try {
+            const userData = await DB.loginUser(u, p);
+            
+            state.playerName = userData.username;
+            Storage.setCloudData(userData.achievements, userData.stats);
+            
+            document.getElementById('auth-logged-out').style.display = 'none';
+            document.getElementById('auth-logged-in').style.display = 'block';
+            document.getElementById('display-username').textContent = userData.username;
+            
+            setGameLock(false); 
+            alert("🔓 Sesión iniciada. Tus logros están sincronizados.");
+        } catch (e) {
+            alert("❌ " + e.message);
+        }
+    });
+
+    bind('btn-guest', () => {
+        state.playerName = null; 
+        document.getElementById('auth-logged-out').style.display = 'none';
+        document.getElementById('auth-logged-in').style.display = 'block';
+        document.getElementById('display-username').textContent = "Invitado (Local)";
+        
+        setGameLock(false); 
+        console.log("Modo invitado: Los datos solo se guardarán localmente.");
+    });
+
+    bind('btn-logout', () => {
+        if(confirm("¿Cerrar sesión? Los datos locales se limpiarán.")) {
+            localStorage.removeItem("achievements");
+            localStorage.removeItem("stats");
+            localStorage.removeItem("rankings");
+            localStorage.removeItem("game_history");
+            location.reload(); 
+        }
+    });
+
+    // --- SISTEMA DE TEMAS (DESPLEGABLE CON PREVIEW) ---
+    const skinSelect = document.getElementById('skin-select');
+    const themeSample = document.getElementById('theme-sample');
+
+    const themeColors = {
+        moderno: '#3498db',
+        winter: '#ffffff',
+        halloween: '#ff6600',
+        cyberpunk: '#ffcc00',
+        clasico: '#bdbdbd',
+        minimal: '#333333'
+    };
+
+    const updateThemePreview = (skin) => {
+        if (themeSample && themeColors[skin]) {
+            themeSample.style.backgroundColor = themeColors[skin];
+        }
+    };
+
+    if (skinSelect) {
+        const currentSkin = localStorage.getItem("skin") || "moderno";
+        skinSelect.value = currentSkin;
+        UI.setSkin(currentSkin);
+        updateThemePreview(currentSkin);
+
+        skinSelect.onchange = (e) => {
+            const selectedSkin = e.target.value;
+            UI.setSkin(selectedSkin);
+            updateThemePreview(selectedSkin);
+        };
+    }
 
     // --- DIFICULTADES ---
     const startNormalGame = (s, m, e) => {
         state.isBlitz = false;
-        state.isDuel = false; // Desactivar duelo si se elige dificultad normal
+        state.isDuel = false;
         Game.startGame(s, m, e);
     };
 
@@ -66,11 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (room) {
         state.isDuel = true;
         state.roomID = room;
-        // Mostramos la UI de duelo
         document.getElementById('duel-header').style.display = 'flex';
         document.getElementById('duel-chat').style.display = 'flex';
+        setGameLock(false);
         
-        // CORRECCIÓN DEL ERROR: Definimos el argumento como 'msg' para evitar confusiones
         DB.joinDuel(room, (msg) => {
             if (msg.type === 'reveal') {
                 state.opponentScore += 10;
@@ -81,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Iniciamos un juego estándar para el duelo
         Game.startGame(12, 25, false);
     }
 
@@ -104,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.btn-home').forEach(btn => {
         btn.onclick = () => {
-            if (state.isDuel) window.location.href = window.location.pathname; // Limpiar URL de sala
+            if (state.isDuel) window.location.href = window.location.pathname;
             UI.showScreen('menu');
         };
     });
@@ -122,5 +228,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.UI = UI;
-    UI.setSkin(localStorage.getItem("skin") || "moderno");
 });

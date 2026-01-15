@@ -9,53 +9,122 @@
     <meta name="theme-color" content="#ffcc00">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Estilo para bloquear el acceso hasta iniciar sesión o elegir invitado */
+        .game-locked { 
+            opacity: 0.2; 
+            pointer-events: none; 
+            filter: grayscale(1); 
+            transition: all 0.4s ease;
+        }
+
+        /* Oculta las secciones del juego al entrar */
+        .game-content { 
+            display: none; 
+            transition: opacity 0.5s ease;
+        }
+
+        /* Estilo para el selector de temas y previsualización */
+        .theme-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        #theme-sample {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
+            transition: background-color 0.3s ease;
+            background-color: #3498db; /* Color inicial */
+        }
+
+        #skin-select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ffcc00;
+            background: #111;
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            width: 200px;
+        }
+    </style>
 </head>
 <body class="moderno">
 
     <div id="menu" class="screen">
         <h1>💣 BUSCAMINAS PRO</h1>
-        
-        <div id="duel-setup" style="margin: 10px 0; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px dashed #555; width: 90%; max-width: 400px; opacity: 0.7; pointer-events: none;">
-            <h4 style="margin: 0 0 10px 0; color: #888;">⚔️ MODO DUELO 1VS1</h4>
-            <button id="btn-create-duel" class="special-btn" style="filter: grayscale(1); background: #333;">Próximamente...</button>
-            <p style="font-size: 0.7rem; color: #777; margin-top: 5px;">Esta función estará disponible en futuras actualizaciones.</p>
-            
-            <div id="duel-link-container" style="display: none; margin-top: 10px;">
-                <input type="text" id="duel-url" readonly style="width: 70%; padding: 8px; border-radius: 5px; border: none; background: #000; color: #0ff; font-size: 0.8rem;">
-                <button id="btn-copy-link" style="padding: 8px 10px;">📋</button>
+
+        <div id="auth-container" style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 2px solid #ffcc00; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 15px rgba(255, 204, 0, 0.1); margin-left: auto; margin-right: auto;">
+            <div id="auth-logged-out">
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Identifícate para jugar y guardar tu progreso</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <input type="text" id="auth-username" placeholder="Nombre de usuario" style="padding: 10px; border-radius: 6px; border: 1px solid #444; background: #111; color: white;">
+                    <input type="password" id="auth-password" placeholder="Contraseña" style="padding: 10px; border-radius: 6px; border: 1px solid #444; background: #111; color: white;">
+                    <div style="display: flex; gap: 5px;">
+                        <button id="btn-login" class="special-btn" style="flex: 1;">Entrar</button>
+                        <button id="btn-register" style="flex: 1; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">Registrar</button>
+                    </div>
+                    <div style="margin-top: 10px; border-top: 1px solid #333; padding-top: 10px;">
+                        <button id="btn-guest" style="width: 100%; background: none; border: 1px dashed #555; color: #888; cursor: pointer; padding: 8px; border-radius: 6px; font-size: 0.8rem;">Jugar como Invitado (Solo Local)</button>
+                    </div>
+                </div>
+            </div>
+            <div id="auth-logged-in" style="display: none;">
+                <p style="margin: 0;">Bienvenido, <span id="display-username" style="color: #ffcc00; font-weight: bold;">Usuario</span></p>
+                <button id="btn-logout" style="margin-top: 8px; font-size: 0.7rem; background: none; border: 1px solid #444; color: #777; cursor: pointer; padding: 4px 10px; border-radius: 4px;">Cerrar Sesión</button>
             </div>
         </div>
+        
+        <div id="main-game-menu" class="game-content">
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <div id="duel-setup" class="game-locked" style="margin: 10px 0; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px dashed #555; width: 90%; max-width: 400px; text-align: center;">
+                    <h4 style="margin: 0 0 10px 0; color: #888;">⚔️ MODO DUELO 1VS1</h4>
+                    <button id="btn-create-duel" class="special-btn" style="filter: grayscale(1); background: #333; width: 100%;">Próximamente...</button>
+                    <p style="font-size: 0.7rem; color: #777; margin-top: 5px;">Esta función estará disponible en futuras actualizaciones.</p>
+                    
+                    <div id="duel-link-container" style="display: none; margin-top: 10px;">
+                        <input type="text" id="duel-url" readonly style="width: 70%; padding: 8px; border-radius: 5px; border: none; background: #000; color: #0ff; font-size: 0.8rem;">
+                        <button id="btn-copy-link" style="padding: 8px 10px;">📋</button>
+                    </div>
+                </div>
+            </div>
 
-        <h3>Skins Temporadas</h3>
-        <div class="skin-group">
-            <button id="skin-winter">❄️ Invierno</button>
-            <button id="skin-halloween">💀 Halloween</button>
-            <button id="skin-cyberpunk" class="special-btn">🌌 Cyberpunk</button>
-        </div>
+            <h3>🎨 Temas</h3>
+            <div class="theme-container">
+                <div id="theme-sample"></div>
+                <select id="skin-select">
+                    <option value="moderno">🧊 Moderno (Default)</option>
+                    <option value="winter">❄️ Invierno</option>
+                    <option value="halloween">💀 Halloween</option>
+                    <option value="cyberpunk">🌌 Cyberpunk</option>
+                    <option value="clasico">🪟 Clásico</option>
+                    <option value="minimal">◻️ Minimal</option>
+                </select>
+            </div>
 
-        <h3>Skins Estilo</h3>
-        <div class="skin-group"> 
-            <button id="skin-clasico">🪟 Clásico</button>
-            <button id="skin-moderno">🧊 Moderno</button>
-            <button id="skin-minimal">◻️ Minimal</button>
-        </div>
+            <h3>Dificultad</h3>
+            <div class="difficulty-group game-locked">
+                <button id="btn-easy">Fácil</button>
+                <button id="btn-medium">Media</button>
+                <button id="btn-hard">Difícil</button>
+                <button id="btn-expert">😈 Experto</button>
+                <button id="btn-custom">⚙️ Personalizado</button>
+                <button id="btn-blitz" class="special-btn">⚡ Modo Blitz (30s)</button>
+            </div>
 
-        <h3>Dificultad</h3>
-        <div class="difficulty-group">
-            <button id="btn-easy">Fácil</button>
-            <button id="btn-medium">Media</button>
-            <button id="btn-hard">Difícil</button>
-            <button id="btn-expert">😈 Experto</button>
-            <button id="btn-custom">⚙️ Personalizado</button>
-            <button id="btn-blitz" class="special-btn">⚡ Modo Blitz (30s)</button>
-        </div>
-
-        <div class="meta-buttons">
-            <button id="btn-achievements">🎖️ Logros</button>
-            <button id="btn-ranking-global" class="special-btn">🌍 Ranking Global</button>
-            <button id="btn-ranking">🏆 Récords Locales</button>
-            <button id="btn-stats">📊 Stats</button>
-            <button id="btn-history-modal">📜 Historial</button>
+            <div class="meta-buttons game-locked">
+                <button id="btn-achievements">🎖️ Logros</button>
+                <button id="btn-ranking-global" class="special-btn">🌍 Ranking Global</button>
+                <button id="btn-ranking">🏆 Récords Locales</button>
+                <button id="btn-stats">📊 Stats</button>
+                <button id="btn-history-modal">📜 Historial</button>
+            </div>
         </div>
     </div>
 
