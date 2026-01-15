@@ -1,9 +1,10 @@
 import * as UI from './ui.js';
 import * as Game from './game.js';
 import { state } from './state.js';
+import * as DB from './db.js'; // Importamos DB para las consultas globales
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Inicializando Buscaminas Pro...");
+    console.log("Inicializando Buscaminas Pro con Ranking Global...");
 
     // Función para asignar eventos de forma segura
     const bind = (id, fn) => {
@@ -17,11 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('skin-minimal', () => UI.setSkin('minimal'));
     bind('skin-winter', () => UI.setSkin('winter'));
     bind('skin-halloween', () => UI.setSkin('halloween'));
-    bind('skin-cyberpunk', () => UI.setSkin('cyberpunk')); // Nueva skin Cyberpunk
+    bind('skin-cyberpunk', () => UI.setSkin('cyberpunk'));
 
-    // --- DIFICULTADES (Resetean el modo Blitz) ---
+    // --- DIFICULTADES ---
     const startNormalGame = (s, m, e) => {
-        state.isBlitz = false; // Desactivar Blitz al jugar normal
+        state.isBlitz = false;
         Game.startGame(s, m, e);
     };
 
@@ -30,16 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-hard',   () => startNormalGame(16, 50, false));
     bind('btn-expert', () => startNormalGame(16, 50, true));
     
-    // BOTÓN HISTORIAL
-    const btnHist = document.getElementById('btn-history-modal');
-    if (btnHist) {
-        btnHist.onclick = () => UI.renderHistory();
-    }
-    // BOTÓN MODO BLITZ
-    const btnBlitz = document.getElementById('btn-blitz');
-    if (btnBlitz) {
-        btnBlitz.onclick = () => Game.startBlitz(10, 15);
-    }
+    // --- BOTONES DE METADATOS Y MODALES ---
+    bind('btn-history-modal', () => UI.renderHistory());
+    bind('btn-blitz', () => Game.startBlitz(10, 15));
+    bind('btn-achievements', UI.renderAchievements);
+    bind('btn-ranking', UI.renderRanking); // Récords locales
+    bind('btn-stats', UI.renderStats);
+    bind('btn-home-game', () => UI.showScreen('menu'));
+
+    // --- NUEVO: RANKING GLOBAL (SUPABASE) ---
+    bind('btn-ranking-global', () => {
+        // Mostramos el modal y cargamos la categoría 'easy' por defecto
+        document.getElementById('globalRankModal').style.display = 'flex';
+        UI.renderGlobalRank('easy'); 
+    });
 
     // --- MODO PERSONALIZADO ---
     bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
@@ -60,12 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => UI.runReplay();
     });
 
-    // --- MENÚS Y ESTADÍSTICAS ---
-    bind('btn-achievements', UI.renderAchievements);
-    bind('btn-ranking', UI.renderRanking);
-    bind('btn-stats', UI.renderStats);
-    bind('btn-home-game', () => UI.showScreen('menu'));
-    
     // --- TUTORIAL ---
     const tutorialModal = document.getElementById('tutorialModal');
     if (tutorialModal && !localStorage.getItem('seenTutorial')) {
@@ -94,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-restart').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            // Si el anterior era Blitz, reiniciamos Blitz
             if (state.isBlitz) {
                 Game.startBlitz(state.lastConfig.size, state.lastConfig.mines);
             } else {
@@ -108,7 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.onclick = () => btn.closest('.modal').style.display = 'none';
     });
 
+    // Exponer UI al objeto window para que los botones del HTML (onclick) funcionen
+    window.UI = UI;
+
     // Cargar skin inicial guardada
     UI.setSkin(localStorage.getItem("skin") || "moderno");
 });
-

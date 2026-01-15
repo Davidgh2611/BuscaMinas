@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import * as Storage from './storage.js';
+import * as DB from './db.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,7 +22,6 @@ export function updateDisplay() {
     if ($('mines')) $('mines').textContent = state.MINES;
     if ($('flags')) $('flags').textContent = state.flagsUsed;
     
-    // Si estamos en Blitz y queda poco tiempo, efecto visual
     if (state.isBlitz && state.seconds <= 5) {
         $('time').style.color = '#ff4444';
         $('time').style.fontWeight = 'bold';
@@ -31,14 +31,52 @@ export function updateDisplay() {
     }
 }
 
+// --- RANKING GLOBAL (SUPABASE) ---
+export async function renderGlobalRank(cat = 'easy') {
+    const container = $('global-rank-container');
+    if (!container) return;
+    
+    container.innerHTML = `<div class="loading">Cargando mejores tiempos...</div>`;
+    
+    const scores = await DB.getGlobalRankings(cat);
+    
+    container.innerHTML = "";
+    if (scores.length === 0) {
+        container.innerHTML = `<p style="text-align:center; padding:20px;">No hay récords en la categoría ${cat.toUpperCase()} todavía. ¡Sé el primero!</p>`;
+    } else {
+        const table = document.createElement('table');
+        table.className = "ranking-table";
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Tiempo</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${scores.map((s, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td style="color: #ffcc00; font-weight: bold;">${s.nombre}</td>
+                        <td>${s.tiempo}s</td>
+                        <td style="font-size: 0.8em; color: #888;">${new Date(s.fecha).toLocaleDateString()}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        container.appendChild(table);
+    }
+}
+
+// --- NOTIFICACIONES ---
 export function showAchievementNotification(name) {
-    // Eliminar notificaciones previas para que no se amontonen
     const oldNotif = document.querySelector('.achievement-notification');
     if (oldNotif) oldNotif.remove();
 
     const notif = document.createElement("div");
-    notif.className = "achievement-notification"; // Usamos clase CSS
-    
+    notif.className = "achievement-notification";
     notif.innerHTML = `
         <div class="ach-icon">🎖️</div>
         <div class="ach-text">
@@ -46,13 +84,9 @@ export function showAchievementNotification(name) {
             <strong>${name}</strong>
         </div>
     `;
-
     document.body.appendChild(notif);
+    playSound('click');
 
-    // Sonido si existe la función
-    if (typeof playSound === 'function') playSound('click');
-
-    // Auto-eliminar después de 4 segundos
     setTimeout(() => {
         notif.style.transform = 'translateX(150%)';
         setTimeout(() => notif.remove(), 500);
@@ -79,15 +113,10 @@ export function createBoard(size, onClick, onRightClick) {
     }
 }
 
-export function renderCell(x, y, value, type = 'reveal') {
+export function renderCell(x, y, value) {
     const index = x * state.SIZE + y;
     const cell = state.cellsDOM[index];
     if (!cell) return;
-
-    if (type === 'flag') {
-        cell.textContent = value ? "🚩" : "";
-        return;
-    }
 
     cell.classList.add("revealed");
     if (value === "💣") {
@@ -105,8 +134,8 @@ export function renderCell(x, y, value, type = 'reveal') {
 function screenShake() {
     const board = $('board');
     if (board) {
-        board.classList.add('shake');
-        setTimeout(() => board.classList.remove('shake'), 400);
+        board.classList.add('shake-animation');
+        setTimeout(() => board.classList.remove('shake-animation'), 400);
     }
 }
 
@@ -129,7 +158,7 @@ function spawnParticles(rect, color, count = 10) {
 export function createParticles(x, y) {
     const cell = state.cellsDOM[x * state.SIZE + y];
     if (!cell) return;
-    spawnParticles(cell.getBoundingClientRect(), 'rgba(255, 255, 255, 0.6)', 6);
+    spawnParticles(cell.getBoundingClientRect(), 'rgba(255, 255, 255, 0.4)', 6);
 }
 
 export function launchConfetti() {
@@ -155,7 +184,7 @@ export function renderAchievements() {
         { key: "intermediate", name: "🎖️ Veterano", desc: "Gana en modo Medio." },
         { key: "hard", name: "🔥 Leyenda", desc: "Gana en modo Difícil." },
         { key: "expert", name: "😈 Experto", desc: "Gana en modo Experto." },
-        { key: "speed_demon", name: "⚡ Flash", desc: "Gana en menos de 30s." },
+        { key: "speed_demon", name: "⚡ Flash", desc: "Gana en menos de 30s o en Blitz." },
         { key: "no_flags", name: "🧠 Sin Banderas", desc: "Gana sin usar banderas." },
         { key: "survivor", name: "🛡️ Superviviente", desc: "Revela 50 casillas." },
         { key: "perfect", name: "💯 Perfecto", desc: "Gana una partida." }
@@ -163,8 +192,8 @@ export function renderAchievements() {
     badges.forEach(ach => {
         const isEarned = Storage.achievements[ach.key];
         const li = document.createElement("li");
-        li.style.cssText = `list-style:none; margin-bottom:12px; opacity:${isEarned ? 1 : 0.4}; border-left: 3px solid ${isEarned ? '#ffcc00' : '#444'}; padding-left: 10px;`;
-        li.innerHTML = `<strong>${isEarned ? '✅' : '🔒'} ${ach.name}</strong><br><small style="color:#aaa">${ach.desc}</small>`;
+        li.className = isEarned ? "ach-item earned" : "ach-item locked";
+        li.innerHTML = `<strong>${isEarned ? '✅' : '🔒'} ${ach.name}</strong><br><small>${ach.desc}</small>`;
         list.appendChild(li);
     });
     $('achModal').style.display = "flex";
@@ -177,21 +206,20 @@ export function renderRanking() {
     const cats = { easy: "🟢 FÁCIL", medium: "🟡 MEDIO", hard: "🔴 DIFÍCIL", expert: "😈 EXPERTO", blitz: "⚡ BLITZ" };
     Object.entries(cats).forEach(([key, label]) => {
         const times = Storage.rankings[key] || [];
-        list.innerHTML += `<div style="margin-top:15px; color:#ffcc00; border-bottom: 1px solid #333"><b>${label}</b></div>`;
+        list.innerHTML += `<div class="rank-cat-header"><b>${label}</b></div>`;
         list.innerHTML += times.length 
-            ? times.map((t, i) => `<div style="padding: 2px 0;">${i+1}. ${t} segundos</div>`).join('') 
-            : "<div style='color:#666; font-size:0.8em'>Sin récords aún</div>";
+            ? times.map((t, i) => `<div class="rank-entry">${i+1}. ${t} segundos</div>`).join('') 
+            : "<div class='rank-empty'>Sin récords locales</div>";
     });
     $('rankModal').style.display = "flex";
 }
 
-// --- NUEVO: RENDER HISTORIAL ---
 export function renderHistory() {
     const history = Storage.getHistory();
     const body = $('historyBody');
     if (!body) return;
     body.innerHTML = history.map(h => `
-        <tr style="border-bottom: 1px solid #333; height: 40px;">
+        <tr class="history-row">
             <td>${h.fecha}</td>
             <td>${h.dificultad.toUpperCase()}</td>
             <td>${h.tiempo}s</td>
@@ -215,9 +243,9 @@ export function renderStats() {
         { label: "Racha Máx.", val: s.maxStreak, icon: "⭐" }
     ];
     container.innerHTML = data.map(item => `
-        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1)">
-            <div style="font-size: 0.8em; color: #aaa;">${item.icon} ${item.label}</div>
-            <div style="font-size: 1.2em; font-weight: bold; color: #ffcc00;">${item.val}</div>
+        <div class="stat-card">
+            <div class="stat-label">${item.icon} ${item.label}</div>
+            <div class="stat-value">${item.val}</div>
         </div>
     `).join('');
     $('statsModal').style.display = "flex";
@@ -236,18 +264,14 @@ export function playSound(type) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
+    osc.connect(gain); gain.connect(ctx.destination);
     if (type === 'click') {
-        osc.type = 'sine';
         osc.frequency.setValueAtTime(600, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
         osc.start(); osc.stop(ctx.currentTime + 0.1);
     } else if (type === 'boom') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(100, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
         gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
         osc.start(); osc.stop(ctx.currentTime + 0.5);
     }
@@ -269,12 +293,10 @@ export function showLose() {
 }
 
 export function runReplay() {
-    document.getElementById('winModal').style.display = 'none';
-    document.getElementById('loseModal').style.display = 'none';
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     state.cellsDOM.forEach(cell => {
         cell.textContent = "";
         cell.className = "cell";
-        cell.style.backgroundColor = "";
     });
     state.history.forEach((move, index) => {
         setTimeout(() => {

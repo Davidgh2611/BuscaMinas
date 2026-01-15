@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import * as UI from './ui.js';
 import * as Storage from './storage.js';
+import * as DB from './db.js'; // Importamos la conexión a Supabase
 
 export function startGame(size, mines, exp) {
     state.SIZE = size;
@@ -71,7 +72,6 @@ function reveal(x, y) {
         UI.updateDisplay();
     }
 
-    // LOGRO: Superviviente (50 casillas)
     if (state.cellsRevealedCount === 50) {
         Storage.unlockAchievement("survivor", "Superviviente");
     }
@@ -98,7 +98,7 @@ function reveal(x, y) {
 function toggleFlag(x, y) {
     if (state.gameOver || state.revealed[x][y]) return;
     const cell = state.cellsDOM[x * state.SIZE + y];
-    state.history.push({ x, y, type: 'flag' });
+    state.history.push({ x, y, yype: 'flag' });
 
     if (!state.flagged[x][y] && cell.textContent !== "❓") {
         state.flagged[x][y] = true;
@@ -114,7 +114,7 @@ function toggleFlag(x, y) {
     UI.updateDisplay();
 }
 
-function checkWin() {
+async function checkWin() {
     if (state.gameOver) return;
     let win = true;
     for (let x = 0; x < state.SIZE; x++) {
@@ -128,29 +128,22 @@ function checkWin() {
         clearInterval(state.timer);
         Storage.updateStats('win'); 
 
-        // --- LÓGICA DE LOGROS MEJORADA ---
         let cat = "easy";
         let achKey = "beginner";
         let achName = "Victoria en Fácil";
 
         if (state.isBlitz) {
             cat = "blitz";
-            achKey = "speed_demon"; // Usamos Flash como logro para Blitz
+            achKey = "speed_demon";
             achName = "Maestro Blitz";
         } else {
             if (state.SIZE === 12) {
-                cat = "medium";
-                achKey = "intermediate";
-                achName = "Victoria en Medio";
+                cat = "medium"; achKey = "intermediate"; achName = "Victoria en Medio";
             } else if (state.SIZE === 16) {
                 if (state.expert) {
-                    cat = "expert";
-                    achKey = "expert";
-                    achName = "Victoria en Experto";
+                    cat = "expert"; achKey = "expert"; achName = "Victoria en Experto";
                 } else {
-                    cat = "hard";
-                    achKey = "hard";
-                    achName = "Victoria en Difícil";
+                    cat = "hard"; achKey = "hard"; achName = "Victoria en Difícil";
                 }
             }
         }
@@ -158,19 +151,23 @@ function checkWin() {
         Storage.saveToHistory({ cat, seconds: state.seconds, win: true });
         Storage.saveScore(cat, state.seconds);
 
-        // Desbloquear Logros
+        // Desbloquear Logros Locales
         Storage.unlockAchievement(achKey, achName);
         Storage.unlockAchievement("perfect", "Partida Perfecta");
-        
-        if (!state.isBlitz && state.seconds < 30) {
-            Storage.unlockAchievement("speed_demon", "Flash");
-        }
-        
-        if (state.flagsUsed === 0) {
-            Storage.unlockAchievement("no_flags", "Sin Banderas");
-        }
+        if (!state.isBlitz && state.seconds < 30) Storage.unlockAchievement("speed_demon", "Flash");
+        if (state.flagsUsed === 0) Storage.unlockAchievement("no_flags", "Sin Banderas");
         
         UI.showWin();
+
+        // --- NUEVA LÓGICA GLOBAL (SUPABASE) ---
+        setTimeout(async () => {
+            const userName = prompt("¡Increíble! Introduce tu nombre para el Ranking Global:");
+            if (userName && userName.trim() !== "") {
+                const finalTime = state.seconds;
+                await DB.saveGlobalScore(userName.trim(), finalTime, cat);
+                UI.showAchievementNotification("¡Puntuación subida al Ranking!");
+            }
+        }, 1200); // Esperamos a que termine la animación de victoria
     }
 }
 

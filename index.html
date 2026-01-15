@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <meta name="theme-color" content="#ffcc00">
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="moderno">
 
@@ -40,7 +41,8 @@
 
         <div class="meta-buttons">
             <button id="btn-achievements">🎖️ Logros</button>
-            <button id="btn-ranking">🏆 Ranking</button>
+            <button id="btn-ranking-global" class="special-btn">🌍 Ranking Global</button>
+            <button id="btn-ranking">🏆 Récords Locales</button>
             <button id="btn-stats">📊 Stats</button>
             <button id="btn-history-modal">📜 Historial</button>
         </div>
@@ -60,6 +62,22 @@
             <button id="btn-home-game">🏠</button>
         </div>
         <div id="board"></div>
+    </div>
+
+    <div id="globalRankModal" class="modal">
+        <div class="modalContent" style="max-width: 600px;">
+            <h3>🌍 Ranking Mundial (Top 10)</h3>
+            <div class="rank-tabs">
+                <button onclick="window.UI.renderGlobalRank('easy')">Fácil</button>
+                <button onclick="window.UI.renderGlobalRank('medium')">Medio</button>
+                <button onclick="window.UI.renderGlobalRank('hard')">Difícil</button>
+                <button onclick="window.UI.renderGlobalRank('expert')">Experto</button>
+            </div>
+            <div id="global-rank-container">
+                <p>Cargando clasificaciones...</p>
+            </div>
+            <button class="close-modal-btn">Cerrar</button>
+        </div>
     </div>
 
     <div id="winModal" class="modal">
@@ -92,7 +110,7 @@
 
     <div id="rankModal" class="modal">
         <div class="modalContent">
-            <h3>🏆 Mejores Tiempos</h3>
+            <h3>🏆 Mejores Tiempos Locales</h3>
             <ul id="rankList"></ul>
             <button class="close-modal-btn">Cerrar</button>
         </div>
