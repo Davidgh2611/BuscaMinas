@@ -21,8 +21,52 @@
         /* Oculta las secciones del juego al entrar */
         .game-content { 
             display: none; 
+            flex-direction: column;
+            align-items: center;
             transition: opacity 0.5s ease;
         }
+
+        /* --- NUEVOS ESTILOS DE ORGANIZACIÓN COMPACTA --- */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Dividir en dos columnas */
+            gap: 15px;
+            width: 95%;
+            max-width: 900px; /* Evita que se estire demasiado */
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .menu-grid { grid-template-columns: 1fr; } /* Una columna en móviles */
+        }
+
+        .menu-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 0; /* Margen controlado por el gap de la grilla */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .menu-section h3 {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* Grillas para botones */
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .full-width { grid-column: span 2; }
 
         /* Estilo para el selector de temas y previsualización */
         .theme-container {
@@ -30,7 +74,9 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-top: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
         }
 
         #theme-sample {
@@ -40,7 +86,7 @@
             border: 2px solid #ffcc00;
             box-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
             transition: background-color 0.3s ease;
-            background-color: #3498db; /* Color inicial */
+            background-color: #3498db;
         }
 
         #skin-select {
@@ -51,8 +97,56 @@
             color: white;
             font-family: inherit;
             cursor: pointer;
-            width: 200px;
+            flex-grow: 1;
         }
+
+        /* --- MEJORAS VISUALES PARA HISTORIAL Y RÉCORDS --- */
+        #historyTable {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            margin: 15px 0;
+        }
+        #historyTable th {
+            color: #ffcc00;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        #historyTable td {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 8px;
+            color: #eee;
+        }
+        #historyTable td:first-child { border-radius: 8px 0 0 8px; }
+        #historyTable td:last-child { border-radius: 0 8px 8px 0; }
+        
+        /* Colores dinámicos para resultados (se aplican vía JS) */
+        .res-win { color: #00ff88 !important; font-weight: bold; }
+        .res-loss { color: #ff4444 !important; opacity: 0.8; }
+
+        #rankList {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .rank-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #444;
+            transition: transform 0.2s;
+        }
+        .rank-card.active { border-left-color: #ffcc00; background: rgba(255, 204, 0, 0.05); }
+        .rank-mode { font-weight: bold; color: #aaa; font-size: 0.9rem; }
+        .rank-val { font-family: 'Courier New', monospace; color: #00f2ff; font-size: 1.1rem; }
+        .rank-empty { color: #555; font-size: 0.8rem; font-style: italic; }
     </style>
 </head>
 <body class="moderno">
@@ -60,7 +154,7 @@
     <div id="menu" class="screen">
         <h1>💣 BUSCAMINAS PRO</h1>
 
-        <div id="auth-container" style="margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 2px solid #ffcc00; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 15px rgba(255, 204, 0, 0.1); margin-left: auto; margin-right: auto;">
+        <div id="auth-container" style="margin-bottom: 15px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 2px solid #ffcc00; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 0 15px rgba(255, 204, 0, 0.1); margin-left: auto; margin-right: auto;">
             <div id="auth-logged-out">
                 <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Identifícate para jugar y guardar tu progreso</p>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -82,50 +176,63 @@
         </div>
         
         <div id="main-game-menu" class="game-content">
-            <div style="display: flex; justify-content: center; width: 100%;">
-                <div id="duel-setup" class="game-locked" style="margin: 10px 0; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px dashed #555; width: 90%; max-width: 400px; text-align: center;">
-                    <h4 style="margin: 0 0 10px 0; color: #888;">⚔️ MODO DUELO 1VS1</h4>
-                    <button id="btn-create-duel" class="special-btn" style="filter: grayscale(1); background: #333; width: 100%;">Próximamente...</button>
-                    <p style="font-size: 0.7rem; color: #777; margin-top: 5px;">Esta función estará disponible en futuras actualizaciones.</p>
-                    
-                    <div id="duel-link-container" style="display: none; margin-top: 10px;">
-                        <input type="text" id="duel-url" readonly style="width: 70%; padding: 8px; border-radius: 5px; border: none; background: #000; color: #0ff; font-size: 0.8rem;">
-                        <button id="btn-copy-link" style="padding: 8px 10px;">📋</button>
+            <div class="menu-grid">
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="menu-section">
+                        <h3>🎮 Modo de Juego</h3>
+                        <div class="button-grid difficulty-group game-locked">
+                            <button id="btn-easy">Fácil</button>
+                            <button id="btn-medium">Media</button>
+                            <button id="btn-hard">Difícil</button>
+                            <button id="btn-expert">😈 Experto</button>
+                            <button id="btn-custom" class="full-width">⚙️ Personalizado</button>
+                            <button id="btn-blitz" class="special-btn full-width">⚡ Modo Blitz (30s)</button>
+                        </div>
+                    </div>
+
+                    <div class="menu-section">
+                        <div id="duel-setup" class="game-locked" style="text-align: center;">
+                            <h4 style="margin: 0 0 10px 0; color: #888; font-size: 0.75rem;">⚔️ MODO DUELO 1VS1</h4>
+                            <button id="btn-create-duel" class="special-btn" style="filter: grayscale(1); background: #333; width: 100%;">Próximamente...</button>
+                            
+                            <div id="duel-link-container" style="display: none; margin-top: 10px;">
+                                <input type="text" id="duel-url" readonly style="width: 70%; padding: 8px; border-radius: 5px; border: none; background: #000; color: #0ff; font-size: 0.8rem;">
+                                <button id="btn-copy-link" style="padding: 8px 10px;">📋</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <h3>🎨 Temas</h3>
-            <div class="theme-container">
-                <div id="theme-sample"></div>
-                <select id="skin-select">
-                    <option value="moderno">🧊 Moderno (Default)</option>
-                    <option value="winter">❄️ Invierno</option>
-                    <option value="halloween">💀 Halloween</option>
-                    <option value="cyberpunk">🌌 Cyberpunk</option>
-                    <option value="clasico">🪟 Clásico</option>
-                    <option value="minimal">◻️ Minimal</option>
-                </select>
-            </div>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="menu-section">
+                        <h3>🎨 Personalización</h3>
+                        <div class="theme-container">
+                            <div id="theme-sample"></div>
+                            <select id="skin-select">
+                                <option value="moderno">🧊 Moderno</option>
+                                <option value="winter">❄️ Invierno</option>
+                                <option value="halloween">💀 Halloween</option>
+                                <option value="cyberpunk">🌌 Cyberpunk</option>
+                                <option value="clasico">🪟 Clásico</option>
+                                <option value="minimal">◻️ Minimal</option>
+                            </select>
+                        </div>
+                    </div>
 
-            <h3>Dificultad</h3>
-            <div class="difficulty-group game-locked">
-                <button id="btn-easy">Fácil</button>
-                <button id="btn-medium">Media</button>
-                <button id="btn-hard">Difícil</button>
-                <button id="btn-expert">😈 Experto</button>
-                <button id="btn-custom">⚙️ Personalizado</button>
-                <button id="btn-blitz" class="special-btn">⚡ Modo Blitz (30s)</button>
-            </div>
+                    <div class="menu-section">
+                        <h3>📊 Tu Progreso</h3>
+                        <div class="button-grid meta-buttons game-locked">
+                            <button id="btn-achievements">🎖️ Logros</button>
+                            <button id="btn-stats">📊 Stats</button>
+                            <button id="btn-ranking">🏆 Récords</button>
+                            <button id="btn-history-modal">📜 Historial</button>
+                            <button id="btn-ranking-global" class="special-btn full-width">🌍 Ranking Global</button>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="meta-buttons game-locked">
-                <button id="btn-achievements">🎖️ Logros</button>
-                <button id="btn-ranking-global" class="special-btn">🌍 Ranking Global</button>
-                <button id="btn-ranking">🏆 Récords Locales</button>
-                <button id="btn-stats">📊 Stats</button>
-                <button id="btn-history-modal">📜 Historial</button>
-            </div>
-        </div>
+            </div> </div>
     </div>
 
     <div id="gameUI" class="screen">
@@ -160,7 +267,6 @@
     </div>
 
     <div id="chat-bubble-rival" class="chat-bubble"></div>
-
     <div id="globalRankModal" class="modal">
         <div class="modalContent" style="max-width: 600px;">
             <h3>🌍 Ranking Mundial (Top 10)</h3>
@@ -170,9 +276,7 @@
                 <button onclick="window.UI.renderGlobalRank('hard')">Difícil</button>
                 <button onclick="window.UI.renderGlobalRank('expert')">Experto</button>
             </div>
-            <div id="global-rank-container">
-                <p>Cargando clasificaciones...</p>
-            </div>
+            <div id="global-rank-container"><p>Cargando clasificaciones...</p></div>
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
@@ -207,18 +311,19 @@
 
     <div id="rankModal" class="modal">
         <div class="modalContent">
-            <h3>🏆 Mejores Tiempos Locales</h3>
-            <ul id="rankList"></ul>
+            <h3 style="color: #ffcc00; margin-bottom: 20px;">🏆 Mejores Tiempos Locales</h3>
+            <ul id="rankList">
+                </ul>
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
 
     <div id="historyModal" class="modal">
-        <div class="modalContent" style="max-width: 500px;">
-            <h3>📜 Últimas 10 Partidas</h3>
-            <table id="historyTable" style="width:100%; margin: 15px 0; border-collapse: collapse;">
+        <div class="modalContent" style="max-width: 550px;">
+            <h3 style="color: #ffcc00; margin-bottom: 10px;">📜 Historial Reciente</h3>
+            <table id="historyTable">
                 <thead>
-                    <tr style="border-bottom: 1px solid #444;">
+                    <tr>
                         <th>Fecha</th>
                         <th>Modo</th>
                         <th>Tiempo</th>
@@ -253,27 +358,12 @@
 
     <div id="tutorialModal" class="modal">
         <div class="modalContent tutorial-card">
-            <div class="tutorial-header">
-                <h2>🚀 Cómo Jugar Pro</h2>
-                <button class="close-tutorial">×</button>
-            </div>
+            <div class="tutorial-header"><h2>🚀 Cómo Jugar Pro</h2><button class="close-tutorial">×</button></div>
             <div class="tutorial-steps">
-                <div class="step">
-                    <span class="step-icon">🖱️</span>
-                    <p><strong>Click Izquierdo:</strong> Revela una casilla. ¡Cuidado con las minas!</p>
-                </div>
-                <div class="step">
-                    <span class="step-icon">🚩</span>
-                    <p><strong>Click Derecho:</strong> Pon una bandera o una ❓.</p>
-                </div>
-                <div class="step">
-                    <span class="step-icon">⚡</span>
-                    <p><strong>Truco Chord:</strong> Click en un número para abrir vecinos si las banderas ya están puestas.</p>
-                </div>
-                <div class="step">
-                    <span class="step-icon">⏳</span>
-                    <p><strong>Modo Blitz:</strong> El tiempo baja. ¡Revelar celdas te da segundos extra!</p>
-                </div>
+                <div class="step"><span class="step-icon">🖱️</span><p><strong>Click Izquierdo:</strong> Revela una casilla.</p></div>
+                <div class="step"><span class="step-icon">🚩</span><p><strong>Click Derecho:</strong> Pon una bandera.</p></div>
+                <div class="step"><span class="step-icon">⚡</span><p><strong>Truco Chord:</strong> Click en número para abrir vecinos.</p></div>
+                <div class="step"><span class="step-icon">⏳</span><p><strong>Modo Blitz:</strong> El tiempo baja.</p></div>
             </div>
             <button id="btn-close-tutorial" class="btn-primary">¡Entendido!</button>
         </div>
