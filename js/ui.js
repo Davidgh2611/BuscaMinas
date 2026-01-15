@@ -292,6 +292,62 @@ export function showLose() {
     $('loseModal').style.display = "flex"; 
 }
 
+// js/ui.js
+
+export function updateDuelScore() {
+    const myScoreEl = document.getElementById('my-score');
+    const oppScoreEl = document.getElementById('opp-score');
+    
+    if (myScoreEl) {
+        myScoreEl.textContent = state.score;
+        // Animación de pulso cuando sube la puntuación
+        myScoreEl.style.transform = "scale(1.2)";
+        setTimeout(() => myScoreEl.style.transform = "scale(1)", 200);
+    }
+    if (oppScoreEl) {
+        oppScoreEl.textContent = state.opponentScore;
+        oppScoreEl.style.color = "#ff4444";
+    }
+}
+
+// Función para enviar reacción
+export function sendReaction(text) {
+    if (!state.isDuel) return;
+    
+    // 1. Enviamos por Supabase
+    import('./db.js').then(db => {
+        db.sendMove({ type: 'chat', text: text });
+    });
+    
+    // 2. Opcional: mostrarla también en nuestra pantalla
+    showReaction(text, "my-bubble");
+}
+
+// Función para mostrar la burbuja en pantalla
+export function showReaction(text) {
+    const bubble = document.getElementById('chat-bubble-rival');
+    bubble.textContent = text;
+    bubble.style.display = 'block';
+    
+    // Reiniciar animación
+    bubble.style.animation = 'none';
+    bubble.offsetHeight; // Truco para resetear el DOM
+    bubble.style.animation = 'bubblePop 2s ease-out forwards';
+    
+    setTimeout(() => { bubble.style.display = 'none'; }, 2000);
+}
+
+// Ejemplo en ui.js o game.js
+if (state.isDuel) {
+    document.getElementById('duel-header').style.display = 'flex';
+    document.getElementById('duel-chat').style.display = 'flex';
+}
+
+export function showDuelHeader(active) {
+    const header = document.getElementById('duel-header');
+    if (header) header.style.display = active ? 'flex' : 'none';
+}
+
 export function runReplay() {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
     state.cellsDOM.forEach(cell => {

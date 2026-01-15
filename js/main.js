@@ -1,12 +1,11 @@
 import * as UI from './ui.js';
 import * as Game from './game.js';
 import { state } from './state.js';
-import * as DB from './db.js'; // Importamos DB para las consultas globales
+import * as DB from './db.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Inicializando Buscaminas Pro con Ranking Global...");
 
-    // Función para asignar eventos de forma segura
     const bind = (id, fn) => {
         const el = document.getElementById(id);
         if (el) el.onclick = fn;
@@ -23,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DIFICULTADES ---
     const startNormalGame = (s, m, e) => {
         state.isBlitz = false;
+        state.isDuel = false; // Desactivar duelo si se elige dificultad normal
         Game.startGame(s, m, e);
     };
 
@@ -31,20 +31,59 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-hard',   () => startNormalGame(16, 50, false));
     bind('btn-expert', () => startNormalGame(16, 50, true));
     
-    // --- BOTONES DE METADATOS Y MODALES ---
     bind('btn-history-modal', () => UI.renderHistory());
     bind('btn-blitz', () => Game.startBlitz(10, 15));
     bind('btn-achievements', UI.renderAchievements);
-    bind('btn-ranking', UI.renderRanking); // Récords locales
+    bind('btn-ranking', UI.renderRanking);
     bind('btn-stats', UI.renderStats);
     bind('btn-home-game', () => UI.showScreen('menu'));
 
-    // --- NUEVO: RANKING GLOBAL (SUPABASE) ---
     bind('btn-ranking-global', () => {
-        // Mostramos el modal y cargamos la categoría 'easy' por defecto
         document.getElementById('globalRankModal').style.display = 'flex';
         UI.renderGlobalRank('easy'); 
     });
+
+    // --- MODO DUELO (SALA Y LINKS) ---
+    bind('btn-create-duel', () => {
+        const roomId = Math.random().toString(36).substring(2, 8);
+        const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+        const input = document.getElementById('duel-url');
+        input.value = inviteUrl;
+        document.getElementById('duel-link-container').style.display = 'block';
+    });
+
+    bind('btn-copy-link', () => {
+        const copyText = document.getElementById('duel-url');
+        copyText.select();
+        navigator.clipboard.writeText(copyText.value);
+        alert("¡Link de duelo copiado!");
+    });
+
+    // --- DETECTAR SALA DE DUELO AL CARGAR ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room');
+
+    if (room) {
+        state.isDuel = true;
+        state.roomID = room;
+        // Mostramos la UI de duelo
+        document.getElementById('duel-header').style.display = 'flex';
+        document.getElementById('duel-chat').style.display = 'flex';
+        
+        // CORRECCIÓN DEL ERROR: Definimos el argumento como 'msg' para evitar confusiones
+        DB.joinDuel(room, (msg) => {
+            if (msg.type === 'reveal') {
+                state.opponentScore += 10;
+                UI.updateDuelScore();
+                UI.createParticles(msg.x, msg.y); 
+            } else if (msg.type === 'chat') {
+                UI.showReaction(msg.text);
+            }
+        });
+        
+        // Iniciamos un juego estándar para el duelo
+        Game.startGame(12, 25, false);
+    }
 
     // --- MODO PERSONALIZADO ---
     bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
@@ -55,37 +94,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('customModal').style.display = 'none';
             state.isBlitz = false;
             Game.startGame(size, mines, false);
-        } else {
-            alert("Configuración no válida (Mínimo 8x8, las minas no pueden superar el tablero)");
         }
     });
 
-    // --- SISTEMA DE REPLAY ---
+    // --- REPLAY Y RESTART ---
     document.querySelectorAll('.btn-replay, #btn-replay').forEach(btn => {
         btn.onclick = () => UI.runReplay();
     });
 
-    // --- TUTORIAL ---
-    const tutorialModal = document.getElementById('tutorialModal');
-    if (tutorialModal && !localStorage.getItem('seenTutorial')) {
-        setTimeout(() => {
-            tutorialModal.style.display = 'flex';
-        }, 1000);
-    }
-
-    const closeTutorial = () => {
-        if (tutorialModal) tutorialModal.style.display = 'none';
-        localStorage.setItem('seenTutorial', 'true');
-    };
-
-    bind('btn-close-tutorial', closeTutorial);
-    const closeBtnTutorial = document.querySelector('.close-tutorial');
-    if (closeBtnTutorial) closeBtnTutorial.onclick = closeTutorial;
-
-    // --- BOTONES DINÁMICOS (Restart y Home) ---
     document.querySelectorAll('.btn-home').forEach(btn => {
         btn.onclick = () => {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            if (state.isDuel) window.location.href = window.location.pathname; // Limpiar URL de sala
             UI.showScreen('menu');
         };
     });
@@ -93,22 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-restart').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            if (state.isBlitz) {
-                Game.startBlitz(state.lastConfig.size, state.lastConfig.mines);
-            } else {
-                Game.startGame(state.lastConfig.size, state.lastConfig.mines, state.lastConfig.expert);
-            }
+            if (state.isBlitz) Game.startBlitz(state.lastConfig.size, state.lastConfig.mines);
+            else Game.startGame(state.lastConfig.size, state.lastConfig.mines, state.lastConfig.expert);
         };
     });
     
-    // Cerrar modales genéricos
     document.querySelectorAll('.close-modal-btn').forEach(btn => {
         btn.onclick = () => btn.closest('.modal').style.display = 'none';
     });
 
-    // Exponer UI al objeto window para que los botones del HTML (onclick) funcionen
     window.UI = UI;
-
-    // Cargar skin inicial guardada
     UI.setSkin(localStorage.getItem("skin") || "moderno");
 });

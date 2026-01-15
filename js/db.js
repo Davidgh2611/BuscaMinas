@@ -35,3 +35,34 @@ export async function getGlobalRankings(categoria) {
     }
     return data;
 }
+
+// js/db.js (Añade esto al final)
+
+let duelChannel = null;
+
+export function joinDuel(roomID, onMessageReceived) {
+    // Creamos o nos unimos a una sala específica
+    duelChannel = supabaseClient.channel(`duel_${roomID}`, {
+        config: { broadcast: { self: false } }
+    });
+
+    duelChannel
+        .on('broadcast', { event: 'move' }, (payload) => {
+            onMessageReceived(payload.payload);
+        })
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log("Conectado al duelo en sala:", roomID);
+            }
+        });
+}
+
+export function sendMove(moveData) {
+    if (duelChannel) {
+        duelChannel.send({
+            type: 'broadcast',
+            event: 'move',
+            payload: moveData
+        });
+    }
+}

@@ -12,5 +12,9 @@ export const state = {
     seconds: 0,
     flagsUsed: 0,
     lastConfig: {} , // Para reiniciar rápido
-    history: [] // <--- AÑADE ESTO
+    history: [] ,// <--- AÑADE ESTO
+    score: 0,
+    opponentScore: 0,
+    isDuel: false,
+    roomID: null
 };

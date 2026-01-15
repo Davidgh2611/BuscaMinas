@@ -479,3 +479,60 @@ button:active {
         gap: 4px;
     }
 }
+
+#duel-header {
+    background: linear-gradient(90deg, rgba(0,255,255,0.2) 0%, rgba(255,0,255,0.2) 100%);
+    border: 1px solid #0ff;
+    padding: 10px 25px;
+    border-radius: 50px;
+    margin-bottom: 20px;
+    font-family: 'Orbitron', sans-serif; /* Si usas una fuente tipo sci-fi */
+}
+
+.player-score span {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.vs-badge {
+    background: #ff0055;
+    padding: 2px 10px;
+    border-radius: 5px;
+    font-style: italic;
+    font-weight: 900;
+    box-shadow: 0 0 10px #ff0055;
+}
+
+.chat-btn {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #0ff;
+    padding: 5px 10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.chat-bubble {
+    position: fixed;
+    top: 40%;
+    right: 10%;
+    background: white;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1.5rem;
+    display: none;
+    box-shadow: 0 0 20px rgba(255,255,255,0.5);
+    z-index: 2000;
+    animation: bubblePop 2s ease-out forwards;
+}
+
+@keyframes bubblePop {
+    0% { transform: scale(0) translateY(0); opacity: 0; }
+    20% { transform: scale(1.2) translateY(-20px); opacity: 1; }
+    80% { transform: scale(1) translateY(-30px); opacity: 1; }
+    100% { transform: scale(0.8) translateY(-50px); opacity: 0; }
+}

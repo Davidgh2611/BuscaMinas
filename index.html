@@ -15,6 +15,16 @@
     <div id="menu" class="screen">
         <h1>💣 BUSCAMINAS PRO</h1>
         
+        <div id="duel-setup" style="margin: 10px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border-radius: 12px; border: 1px dashed #0ff; width: 90%; max-width: 400px;">
+            <h4 style="margin: 0 0 10px 0; color: #0ff;">⚔️ MODO DUELO 1VS1</h4>
+            <button id="btn-create-duel" class="special-btn">Crear Sala de Duelo</button>
+            <div id="duel-link-container" style="display: none; margin-top: 10px;">
+                <input type="text" id="duel-url" readonly style="width: 70%; padding: 8px; border-radius: 5px; border: none; background: #000; color: #0ff; font-size: 0.8rem;">
+                <button id="btn-copy-link" style="padding: 8px 10px;">📋</button>
+                <p style="font-size: 0.7rem; color: #aaa; margin-top: 5px;">¡Copia el link y envíalo a tu rival!</p>
+            </div>
+        </div>
+
         <h3>Skins Temporadas</h3>
         <div class="skin-group">
             <button id="skin-winter">❄️ Invierno</button>
@@ -49,6 +59,12 @@
     </div>
 
     <div id="gameUI" class="screen">
+        <div id="duel-header" style="display: none; justify-content: space-between; align-items: center; width: 100%; max-width: 400px; padding: 10px; margin-bottom: 10px;">
+            <div class="player-score">TÚ: <span id="my-score">0</span></div>
+            <div class="vs-badge">VS</div>
+            <div class="player-score">RIVAL: <span id="opp-score">0</span></div>
+        </div>
+
         <div id="topbar">
             <div class="stat-group">
                 <span>💣</span> <span id="mines">0</span>
@@ -61,8 +77,19 @@
             </div>
             <button id="btn-home-game">🏠</button>
         </div>
+
         <div id="board"></div>
+
+        <div id="duel-chat" style="display: none; margin-top: 15px; gap: 10px; justify-content: center;">
+            <button class="chat-btn" onclick="window.UI.sendReaction('😎')">😎</button>
+            <button class="chat-btn" onclick="window.UI.sendReaction('🎯')">🎯</button>
+            <button class="chat-btn" onclick="window.UI.sendReaction('💥')">💥</button>
+            <button class="chat-btn" onclick="window.UI.sendReaction('GG')">GG</button>
+            <button class="chat-btn" onclick="window.UI.sendReaction('❓')">❓</button>
+        </div>
     </div>
+
+    <div id="chat-bubble-rival" class="chat-bubble"></div>
 
     <div id="globalRankModal" class="modal">
         <div class="modalContent" style="max-width: 600px;">
@@ -153,7 +180,7 @@
             <button class="close-modal-btn">Cerrar</button>
         </div>
     </div>
-    
+
     <div id="tutorialModal" class="modal">
         <div class="modalContent tutorial-card">
             <div class="tutorial-header">

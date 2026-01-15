@@ -219,6 +219,41 @@ function chord(x, y) {
     }
 }
 
+// Fragmento para js/game.js dentro de la función handleCellClick
+
+function handleCellClick(x, y) {
+    if (state.gameOver) return;
+    
+    // Si es modo duelo, avisamos al otro
+    if (state.isDuel) {
+        DB.sendMove({ x, y, type: 'reveal', playerName: state.playerName });
+    }
+
+    const cellValue = state.board[x][y];
+    if (cellValue === "💣") {
+        // En duelo, una bomba te resta puntos pero no termina el juego de inmediato
+        state.score = Math.max(0, state.score - 100);
+        UI.renderCell(x, y, "💣");
+        UI.updateDuelScore();
+    } else {
+        // Celda segura: +10 puntos
+        state.score += 10;
+        revealCell(x, y);
+        UI.updateDuelScore();
+    }
+}
+
+// Función que se ejecuta cuando recibimos el movimiento del rival
+export function handleOpponentMove(move) {
+    // Marcamos visualmente lo que hizo el rival (ej. un borde rojo)
+    const cell = state.cellsDOM[move.x * state.SIZE + move.y];
+    cell.style.outline = "2px solid #ff4444"; 
+    
+    // Actualizamos su puntuación lógica
+    state.opponentScore += 10; 
+    UI.updateDuelScore();
+}
+
 function lose(hitX, hitY) {
     state.gameOver = true;
     clearInterval(state.timer);
