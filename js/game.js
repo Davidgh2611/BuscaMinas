@@ -17,13 +17,9 @@ export function startGame(size, mines, exp) {
     state.firstClick = true;
     state.flagsUsed = 0;
 
-    // Si no se definió isBlitz en startBlitz, aseguramos que sea falso
     if (state.isBlitz === undefined) state.isBlitz = false;
-    
-    // Si no es blitz, empezamos desde 0. Si es blitz, startBlitz ya puso 30.
     if (!state.isBlitz) state.seconds = 0;
 
-    // --- TEMPORIZADOR UNIFICADO ---
     clearInterval(state.timer);
     state.timer = setInterval(() => {
         if (!state.gameOver) {
@@ -49,7 +45,7 @@ export function startGame(size, mines, exp) {
 
 export function startBlitz(size, mines) {
     state.isBlitz = true;
-    state.seconds = 30; // Tiempo inicial de Blitz
+    state.seconds = 30;
     startGame(size, mines, false);
 }
 
@@ -70,13 +66,15 @@ function reveal(x, y) {
     state.revealed[x][y] = true;
     state.cellsRevealedCount++;
 
-    // --- Lógica Blitz: Sumar tiempo ---
     if (state.isBlitz && state.board[x][y] !== "💣") {
         state.seconds += (state.board[x][y] === 0) ? 2 : 1;
         UI.updateDisplay();
     }
 
-    if (state.cellsRevealedCount >= 50) Storage.unlockAchievement("survivor", "Superviviente");
+    // LOGRO: Superviviente (50 casillas)
+    if (state.cellsRevealedCount === 50) {
+        Storage.unlockAchievement("survivor", "Superviviente");
+    }
     
     UI.renderCell(x, y, state.board[x][y]);
     
@@ -130,19 +128,47 @@ function checkWin() {
         clearInterval(state.timer);
         Storage.updateStats('win'); 
 
-        let cat = state.isBlitz ? "blitz" : "easy";
-        if (!state.isBlitz) {
-            if (state.SIZE === 12) cat = "medium";
-            if (state.SIZE === 16) cat = state.expert ? "expert" : "hard";
+        // --- LÓGICA DE LOGROS MEJORADA ---
+        let cat = "easy";
+        let achKey = "beginner";
+        let achName = "Victoria en Fácil";
+
+        if (state.isBlitz) {
+            cat = "blitz";
+            achKey = "speed_demon"; // Usamos Flash como logro para Blitz
+            achName = "Maestro Blitz";
+        } else {
+            if (state.SIZE === 12) {
+                cat = "medium";
+                achKey = "intermediate";
+                achName = "Victoria en Medio";
+            } else if (state.SIZE === 16) {
+                if (state.expert) {
+                    cat = "expert";
+                    achKey = "expert";
+                    achName = "Victoria en Experto";
+                } else {
+                    cat = "hard";
+                    achKey = "hard";
+                    achName = "Victoria en Difícil";
+                }
+            }
         }
 
-        // Guardar en el nuevo historial detallado
         Storage.saveToHistory({ cat, seconds: state.seconds, win: true });
-        
         Storage.saveScore(cat, state.seconds);
+
+        // Desbloquear Logros
+        Storage.unlockAchievement(achKey, achName);
         Storage.unlockAchievement("perfect", "Partida Perfecta");
-        if (!state.isBlitz && state.seconds < 30) Storage.unlockAchievement("speed_demon", "Flash");
-        if (state.flagsUsed === 0) Storage.unlockAchievement("no_flags", "Sin Banderas");
+        
+        if (!state.isBlitz && state.seconds < 30) {
+            Storage.unlockAchievement("speed_demon", "Flash");
+        }
+        
+        if (state.flagsUsed === 0) {
+            Storage.unlockAchievement("no_flags", "Sin Banderas");
+        }
         
         UI.showWin();
     }
@@ -201,7 +227,6 @@ function lose(hitX, hitY) {
     clearInterval(state.timer);
     Storage.updateStats('lose', 1); 
 
-    // Guardar derrota en historial
     let cat = state.isBlitz ? "blitz" : (state.SIZE === 8 ? "easy" : "other");
     Storage.saveToHistory({ cat, seconds: state.seconds, win: false });
 

@@ -261,3 +261,23 @@ button:active {
 @keyframes fall {
     to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 }
+
+/* Asegura que la notificación de logro se vea por encima de todo */
+.achievement-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999 !important; /* Prioridad máxima */
+    background: #333;
+    border-left: 5px solid #ffcc00;
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: slideInAchievement 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideInAchievement {
+    from { transform: translateX(120%); }
+    to { transform: translateX(0); }
+}

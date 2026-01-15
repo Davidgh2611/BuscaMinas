@@ -38,15 +38,26 @@ export function saveAch() {
 
 // IMPORTANTE: Importación dinámica para evitar el error de "referencia circular"
 // ya que UI importa Storage y Storage importa UI.
+// js/storage.js
+
 export async function unlockAchievement(key, name) {
-    if (!achievements[key]) {
-        achievements[key] = true;
-        saveAch();
+    // Si el logro ya existe, no hacemos nada
+    if (achievements[key]) return;
+
+    console.log(`¡Logro detectado: ${name}! Guardando...`);
+    
+    achievements[key] = true;
+    saveAch();
+
+    // Importación dinámica para romper el bucle circular y mostrar la notificación
+    try {
         const UI = await import('./ui.js');
         UI.showAchievementNotification(name);
+        if (typeof UI.playSound === 'function') UI.playSound('click'); 
+    } catch (err) {
+        console.error("Error al cargar la notificación de UI:", err);
     }
 }
-
 // --- RANKINGS (MEJORES TIEMPOS) ---
 export let rankings = JSON.parse(localStorage.getItem("rankings")) || {
     easy: [], medium: [], hard: [], expert: [], blitz: []
