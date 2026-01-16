@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- SISTEMA DE TEMAS ---
+    // --- SISTEMA DE TEMAS (FIXED PARA LOADER INFINITO) ---
     const skinSelect = document.getElementById('skin-select');
     const themeSample = document.getElementById('theme-sample');
     const themeColors = {
@@ -156,10 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
         skinSelect.value = currentSkin;
         UI.setSkin(currentSkin);
         updateThemePreview(currentSkin);
+        
+        // Asegurar que el loader se quite si ya estamos eligiendo skins
+        document.body.classList.add('ui-ready');
+
         skinSelect.onchange = (e) => {
             const selectedSkin = e.target.value;
             UI.setSkin(selectedSkin);
             updateThemePreview(selectedSkin);
+            // Reforzar estado listo para evitar bloqueos visuales
+            document.body.classList.add('ui-ready');
         };
     }
 
