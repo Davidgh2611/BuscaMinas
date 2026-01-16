@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- GESTOR DE INTERFAZ CENTRALIZADO (Versión Anti-Parpadeo F5) ---
+    // --- GESTOR DE INTERFAZ CENTRALIZADO (Versión Anti-Parpadeo F5 con Loader) ---
     const refreshUIState = () => {
         const savedUser = localStorage.getItem("session_user");
         const isGuest = localStorage.getItem("is_guest") === "true";
@@ -63,6 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             setGameLock(true);
         }
+
+        // --- FINALIZACIÓN DE CARGA ---
+        // Añadimos un pequeño retardo para que la transición visual sea más fluida
+        setTimeout(() => {
+            document.body.classList.add('ui-ready');
+        }, 300);
     };
 
     // Lanzar la restauración de interfaz inmediatamente

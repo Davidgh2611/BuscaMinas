@@ -13,6 +13,55 @@
     <link rel="manifest" href="manifest.json">
     
     <style>
+        /* --- 0. CONTROL DE VISIBILIDAD CRÍTICO (Anti-F5) --- */
+        #initial-loader {
+            position: fixed;
+            inset: 0;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999; /* Por encima de todo */
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        .loader-bar-container {
+            width: 200px;
+            height: 4px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .loader-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #ffcc00;
+            box-shadow: 0 0 10px #ffcc00;
+            animation: loadingFill 1.5s infinite ease-in-out;
+        }
+
+        @keyframes loadingFill {
+            0% { width: 0%; transform: translateX(-100%); }
+            50% { width: 100%; transform: translateX(0); }
+            100% { width: 0%; transform: translateX(100%); }
+        }
+
+        /* Oculta el juego mientras el JS decide qué mostrar */
+        body:not(.ui-ready) #menu, 
+        body:not(.ui-ready) #gameUI {
+            display: none !important;
+        }
+
+        /* Remueve el loader cuando la UI está lista */
+        body.ui-ready #initial-loader {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
         /* Estilo para bloquear el acceso hasta iniciar sesión o elegir invitado */
         .game-locked { 
             opacity: 0.2; 
@@ -149,6 +198,13 @@
     </style>
 </head>
 <body class="moderno">
+
+    <div id="initial-loader">
+        <div style="font-weight: bold; letter-spacing: 2px; color: #fff;">💣 BUSCAMINAS PRO</div>
+        <div class="loader-bar-container">
+            <div class="loader-bar-fill"></div>
+        </div>
+    </div>
 
     <div id="menu" class="screen">
         <h1>💣 BUSCAMINAS PRO</h1>

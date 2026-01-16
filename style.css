@@ -1,9 +1,52 @@
+/* =========================================
+   0. BARRA DE CARGA INICIAL (Anti-F5)
+   ========================================= */
+#initial-loader {
+    position: fixed;
+    inset: 0;
+    background: #1e1e1e; /* Color base de tu juego */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s;
+}
 
-/* Evita el parpadeo visual al cargar (F5) */
-#auth-logged-out, 
-#auth-logged-in, 
-#main-game-menu {
-    display: none;
+.loader-bar-container {
+    width: 200px;
+    height: 4px;
+    background: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.loader-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: #ffcc00; /* Tu color accent */
+    box-shadow: 0 0 10px #ffcc00;
+    animation: loadingFill 1.5s infinite ease-in-out;
+}
+
+@keyframes loadingFill {
+    0% { width: 0%; transform: translateX(-100%); }
+    50% { width: 100%; transform: translateX(0); }
+    100% { width: 0%; transform: translateX(100%); }
+}
+
+/* Ocultar loader cuando el JS añade la clase al body */
+body.ui-ready #initial-loader {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Evita que se vea el contenido del juego mientras carga */
+body:not(.ui-ready) .screen, 
+body:not(.ui-ready) #topbar, 
+body:not(.ui-ready) .menu-grid {
+    display: none !important;
 }
 
 /* =========================================
@@ -72,6 +115,14 @@ body {
 #auth-logged-in, 
 #gameUI {
     display: none;
+}
+
+/* Clase activa para que el JS muestre las secciones */
+#main-game-menu.active, 
+#auth-logged-out.active, 
+#auth-logged-in.active, 
+#gameUI.active {
+    display: block !important;
 }
 
 /* Clase de bloqueo para cuando el menú sea visible pero el usuario no tenga acceso */
