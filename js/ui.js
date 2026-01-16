@@ -78,33 +78,59 @@ export function renderAchievements() {
 }
 
 // --- NOTIFICACIONES ---
+// ui.js
 export async function showAchievementNotification(name) {
-    const oldNotif = document.querySelector('.achievement-notification');
-    if (oldNotif) oldNotif.remove();
+    const theme = document.body.className || 'moderno'; // Detecta tema activo
 
-    const notif = document.createElement("div");
-    notif.className = "achievement-notification";
+    // Definimos colores dinámicos según tema
+    const themeColors = {
+        moderno:   { bg: '#333', color: '#ffcc00' },
+        clasico:   { bg: '#c0c0c0', color: '#ff0000' },
+        minimal:   { bg: '#ffffff', color: '#d32f2f' },
+        winter:    { bg: '#e0f7ff', color: '#003049' },
+        halloween: { bg: '#2a1b0a', color: '#ff6600' },
+        cyberpunk: { bg: '#050517', color: '#0ff' }
+    };
+
+    const colors = themeColors[theme] || themeColors.moderno;
+
+    const notif = document.createElement('div');
+    notif.className = `achievement-notification show notif-${theme}`;
+    
     notif.innerHTML = `
-        <div class="ach-icon">🎖️</div>
+        <div class="ach-icon">🏆</div>
         <div class="ach-text">
-            <small>LOGRO DESBLOQUEADO</small>
+            <small>¡Nuevo logro desbloqueado!</small>
             <strong>${name}</strong>
         </div>
     `;
-    document.body.appendChild(notif);
 
-    // Animación de entrada
-    requestAnimationFrame(() => notif.classList.add('show'));
+    // Aplicamos estilos dinámicos inline para garantizar prioridad
+    notif.style.backgroundColor = colors.bg;
+    notif.style.color = colors.color;
 
-    // Sonido de logro
-    playSound('click');
+    // Apilar notificaciones sin empujar layout
+    const container = document.getElementById('toast-container') || (() => {
+        const c = document.createElement('div');
+        c.id = 'toast-container';
+        document.body.appendChild(c);
+        return c;
+    })();
 
-    // Desaparecer automáticamente
+    // Calculamos posición vertical según número de notificaciones activas
+    const index = container.children.length;
+    notif.style.setProperty('--toast-top', `${20 + index * 78}px`);
+
+    container.appendChild(notif);
+
+    // Animación automática de desaparición
     setTimeout(() => {
         notif.classList.remove('show');
+        notif.classList.add('hiding');
         setTimeout(() => notif.remove(), 500);
-    }, 4000);
+    }, 3000);
 }
+
 
 
 // --- RANKINGS Y ESTADÍSTICAS ---

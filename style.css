@@ -887,32 +887,61 @@ table.ranking-table, table#historyTable {
    FIN DEL CSS (COMPATIBLE)
    ========================================= */
 
+/* Base de la notificación */
 .achievement-notification {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: linear-gradient(135deg, #ffcc00, #ff6600);
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px;
     display: flex;
     align-items: center;
+    padding: 12px 18px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.5s ease;
     z-index: 9999;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-    font-size: 16px;
-    font-weight: bold;
-    transform: translateX(150%);
-    transition: transform 0.5s ease, opacity 0.5s ease;
+    font-family: sans-serif;
 }
+
+/* Mostrar */
 .achievement-notification.show {
-    transform: translateX(0%);
+    opacity: 1;
+    transform: translateY(0);
 }
+
+/* Contenido */
 .achievement-notification .ach-icon {
-    font-size: 28px;
-    margin-right: 12px;
+    font-size: 1.8rem;
+    margin-right: 10px;
 }
 .achievement-notification .ach-text small {
     display: block;
-    font-size: 12px;
-    color: #fff8;
+    font-size: 0.7rem;
 }
+.achievement-notification .ach-text strong {
+    display: block;
+    font-size: 1rem;
+    margin-top: 2px;
+}
+
+/* --- Animaciones por tema --- */
+@keyframes snowFall {
+    0% { transform: translateY(-20px) rotate(0deg); }
+    100% { transform: translateY(10px) rotate(360deg); }
+}
+
+@keyframes fireFlicker {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes neonGlow {
+    0%, 100% { box-shadow: 0 0 5px #0ff, 0 0 10px #0ff; }
+    50% { box-shadow: 0 0 10px #0ff, 0 0 20px #0ff; }
+}
+
+/* Clases por skin */
+.notif-winter { animation: snowFall 1s ease forwards; }
+.notif-halloween { animation: fireFlicker 1s ease infinite; }
+.notif-cyberpunk { animation: neonGlow 1s ease infinite; }
