@@ -8,19 +8,30 @@ let supabaseClient = null;
 /**
  * Inicializa el cliente de Supabase si la librería está disponible.
  */
-function initClient() {
+const initClient = () => {
+    // Si ya existe, lo devolvemos
     if (supabaseClient) return supabaseClient;
-    
-    if (window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        return supabaseClient;
-    }
-    
-    console.warn("Supabase no se ha cargado todavía. Reintentando en la próxima llamada...");
-    return null;
-}
 
-// Intento inicial
+    // Verificamos si la librería externa (CDN) ya está cargada en el objeto window
+    if (window.supabase) {
+        const { createClient } = window.supabase;
+        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return supabaseClient;
+    } else {
+        console.warn("db.js: Supabase CDN no detectado aún. Reintentando en la próxima llamada...");
+        return null;
+    }
+};
+
+/**
+ * Exportamos una función para obtener el cliente de forma segura.
+ * Esto garantiza que si Supabase tarda en cargar, las funciones lo intenten de nuevo al usarse.
+ */
+export const getClient = () => {
+    return supabaseClient || initClient();
+};
+
+// Intento inicial de conexión
 initClient();
 
 // --- SISTEMA DE USUARIO Y CONTRASEÑA ---
@@ -29,7 +40,7 @@ initClient();
  * Registra un nuevo usuario en la tabla 'profiles'
  */
 export async function registerUser(username, password) {
-    const client = initClient();
+    const client = getClient(); // Usamos la nueva función segura
     if (!client) throw new Error("Base de datos no disponible. Verifica tu conexión.");
 
     // 1. Verificar si el usuario ya existe
@@ -59,7 +70,7 @@ export async function registerUser(username, password) {
  * Valida las credenciales y devuelve los datos del usuario
  */
 export async function loginUser(username, password) {
-    const client = initClient();
+    const client = getClient();
     if (!client) throw new Error("Base de datos no disponible.");
 
     const { data, error } = await client
@@ -78,7 +89,7 @@ export async function loginUser(username, password) {
  * Sincroniza los logros y stats locales con la base de datos
  */
 export async function syncUserData(username, achievements, stats) {
-    const client = initClient();
+    const client = getClient();
     if (!client) return;
 
     const { error } = await client
@@ -92,7 +103,7 @@ export async function syncUserData(username, achievements, stats) {
 // --- RANKING GLOBAL ---
 
 export async function saveGlobalScore(nombre, tiempo, categoria) {
-    const client = initClient();
+    const client = getClient();
     if (!client) return null;
 
     const { data, error } = await client
@@ -107,7 +118,7 @@ export async function saveGlobalScore(nombre, tiempo, categoria) {
 }
 
 export async function getGlobalRankings(categoria) {
-    const client = initClient();
+    const client = getClient();
     if (!client) return [];
 
     const { data, error } = await client
@@ -129,7 +140,7 @@ export async function getGlobalRankings(categoria) {
 let duelChannel = null;
 
 export function joinDuel(roomID, onMessageReceived) {
-    const client = initClient();
+    const client = getClient();
     if (!client) return;
 
     duelChannel = client.channel(`duel_${roomID}`, {

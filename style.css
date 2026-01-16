@@ -1,3 +1,11 @@
+
+/* Evita el parpadeo visual al cargar (F5) */
+#auth-logged-out, 
+#auth-logged-in, 
+#main-game-menu {
+    display: none;
+}
+
 /* =========================================
    1. VARIABLES Y TEMAS (SKINS)
    ========================================= */

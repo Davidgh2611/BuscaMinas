@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- GESTOR DE INTERFAZ CENTRALIZADO (Solución definitiva F5 / Shift+F5) ---
+    // --- GESTOR DE INTERFAZ CENTRALIZADO (Versión Anti-Parpadeo F5) ---
     const refreshUIState = () => {
         const savedUser = localStorage.getItem("session_user");
         const isGuest = localStorage.getItem("is_guest") === "true";
@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayUserEl = document.getElementById('display-username');
 
         // Si los elementos críticos no existen aún (carga lenta), reintentamos brevemente
-        if (!loggedOutDiv || !gameMenu) {
-            setTimeout(refreshUIState, 30);
+        if (!loggedOutDiv || !gameMenu || !loggedInDiv) {
+            setTimeout(refreshUIState, 10);
             return;
         }
 
@@ -43,10 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // ESTADO: SESIÓN ACTIVA
             state.playerName = savedUser || "Invitado (Local)";
             
-            loggedOutDiv.style.display = 'none';
+            // Ocultar login con prioridad y mostrar menú
+            loggedOutDiv.style.setProperty('display', 'none', 'important');
             loggedInDiv.style.display = 'block';
             
-            // Forzamos la visibilidad del menú
             gameMenu.style.display = 'block'; 
             gameMenu.style.opacity = '1';
             
@@ -55,11 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("🔄 Sesión sincronizada:", state.playerName);
         } else {
             // ESTADO: REQUIERE LOGIN
-            loggedOutDiv.style.display = 'block';
+            // Ocultar menú con prioridad y mostrar login
+            gameMenu.style.setProperty('display', 'none', 'important');
             loggedInDiv.style.display = 'none';
             
-            // OCULTAMOS EL MENÚ COMPLETAMENTE (Evita que se vea de fondo bloqueado)
-            gameMenu.style.display = 'none'; 
+            loggedOutDiv.style.display = 'block';
             
             setGameLock(true);
         }
@@ -71,6 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SISTEMA DE AUTENTICACIÓN ---
     
     bind('btn-register', async () => {
+        // Verificamos conexión antes de proceder
+        DB.getClient(); 
+        
         const u = document.getElementById('auth-username').value.trim();
         const p = document.getElementById('auth-password').value.trim();
         if (!u || !p) return alert("Por favor, rellena usuario y contraseña.");
@@ -84,6 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     bind('btn-login', async () => {
+        // Verificamos conexión antes de proceder
+        DB.getClient();
+
         const u = document.getElementById('auth-username').value.trim();
         const p = document.getElementById('auth-password').value.trim();
         if (!u || !p) return alert("Introduce tus credenciales.");
@@ -175,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-home-game', () => UI.showScreen('menu'));
 
     bind('btn-ranking-global', () => {
+        DB.getClient(); // Asegurar conexión para el ranking
         const modal = document.getElementById('globalRankModal');
         if (modal) modal.style.display = 'flex';
         UI.renderGlobalRank('easy'); 
