@@ -1,5 +1,5 @@
-import { state } from './state.js';
 import * as UI from './ui.js';
+import { state } from './state.js';
 import * as Storage from './storage.js';
 import * as DB from './db.js';
 
@@ -9,9 +9,9 @@ export function startGame(size, mines, exp) {
     state.expert = exp;
     state.lastConfig = { size, mines, exp };
     state.cellsRevealedCount = 0;
-    state.history = []; 
-    state.chordsCount = 0; // Para el logro de "Pianista"
-    
+    state.history = [];
+    state.chordsCount = 0;
+
     state.board = [...Array(size)].map(() => Array(size).fill(0));
     state.revealed = [...Array(size)].map(() => Array(size).fill(false));
     state.flagged = [...Array(size)].map(() => Array(size).fill(false));
@@ -30,7 +30,7 @@ export function startGame(size, mines, exp) {
                 if (state.seconds <= 0) {
                     state.seconds = 0;
                     UI.updateDisplay();
-                    lose(-1, -1); 
+                    lose(-1, -1);
                     return;
                 }
             } else {
@@ -53,20 +53,20 @@ export function startBlitz(size, mines) {
 
 function clickCell(x, y) {
     if (state.gameOver || state.flagged[x][y]) return;
-    
-    if (state.firstClick) { 
-        placeMines(x, y); 
-        state.firstClick = false; 
+
+    if (state.firstClick) {
+        placeMines(x, y);
+        state.firstClick = false;
     }
-    
+
     state.history.push({ x, y, type: 'reveal' });
 
-    if (state.revealed[x][y]) { 
-        chord(x, y); 
-        checkWin(); 
-        return; 
+    if (state.revealed[x][y]) {
+        chord(x, y);
+        checkWin();
+        return;
     }
-    
+
     reveal(x, y);
     checkWin();
     UI.createParticles(x, y);
@@ -86,24 +86,26 @@ function reveal(x, y) {
     if (state.cellsRevealedCount === 50) {
         Storage.unlockAchievement("survivor", "Superviviente");
     }
-    
+
+    // Usamos UI.renderCell para que el estilo sea consistente (bombas rojas, partículas...)
     UI.renderCell(x, y, state.board[x][y]);
-    
-    if (state.board[x][y] === "💣") { 
-        lose(x, y); 
-        return; 
+
+    if (state.board[x][y] === "💣") {
+        // si es bomba, manejamos la derrota
+        lose(x, y);
+        return;
     }
-    
-    // EXPANSIÓN AUTOMÁTICA (Lógica de Buscaminas Real)
-    // Se eliminó '&& !state.expert' para que funcione siempre que el valor sea 0
+
+    // EXPANSIÓN AUTOMÁTICA (cuando es 0)
     if (state.board[x][y] === 0) {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
                 if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE) {
-                    if (!state.revealed[nx][ny]) {
+                    if (!state.revealed[nx][ny] && !state.flagged[nx][ny]) {
                         // Guardamos en el historial para replays/stats
                         state.history.push({ x: nx, y: ny, type: 'reveal' });
+                        // Llamamos a reveal recursivamente (que usará UI.renderCell internamente)
                         reveal(nx, ny);
                     }
                 }
@@ -115,7 +117,7 @@ function reveal(x, y) {
 function toggleFlag(x, y) {
     if (state.gameOver || state.revealed[x][y]) return;
     const cell = state.cellsDOM[x * state.SIZE + y];
-    
+
     if (!state.flagged[x][y] && cell.textContent !== "❓") {
         state.flagged[x][y] = true;
         state.flagsUsed++;
@@ -135,9 +137,9 @@ async function checkWin() {
     let win = true;
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
-            if (state.board[x][y] !== "💣" && !state.revealed[x][y]) { 
-                win = false; 
-                break; 
+            if (state.board[x][y] !== "💣" && !state.revealed[x][y]) {
+                win = false;
+                break;
             }
         }
     }
@@ -145,7 +147,7 @@ async function checkWin() {
     if (win) {
         state.gameOver = true;
         clearInterval(state.timer);
-        Storage.updateStats('win'); 
+        Storage.updateStats('win');
 
         let cat = "easy";
         let achKey = "beginner";
@@ -174,7 +176,7 @@ async function checkWin() {
 
         // LOGRO: Flash (Menos de 30s)
         if (state.seconds < 30) Storage.unlockAchievement("speed_demon", "⚡ Flash");
-        
+
         // LOGRO: Supersónico (Menos de 15s)
         if (state.seconds < 15) Storage.unlockAchievement("sonic", "🌀 Supersónico");
 
@@ -197,7 +199,7 @@ async function checkWin() {
 
         Storage.saveToHistory({ cat, seconds: state.seconds, win: true });
         Storage.saveScore(cat, state.seconds);
-        
+
         UI.showWin();
 
         // --- SUBIDA A RANKING GLOBAL ---
@@ -218,10 +220,10 @@ function placeMines(sx, sy) {
         let y = Math.random() * state.SIZE | 0;
         const isNearFirstClick = Math.abs(x - sx) <= 1 && Math.abs(y - sy) <= 1;
         if (state.board[x][y] === "💣" || isNearFirstClick) continue;
-        state.board[x][y] = "💣"; 
+        state.board[x][y] = "💣";
         p++;
     }
-    
+
     // Calcular números
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
@@ -246,7 +248,7 @@ function chord(x, y) {
             if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE && state.flagged[nx][ny]) f++;
         }
     }
-    
+
     if (f === state.board[x][y]) {
         state.chordsCount++;
         // LOGRO: Pianista (20 chords)
@@ -269,38 +271,34 @@ function chord(x, y) {
 function lose(hitX, hitY) {
     state.gameOver = true;
     clearInterval(state.timer);
-    
+
     // Actualizar estadísticas globales
-    Storage.updateStats('lose', 1); 
-    
+    Storage.updateStats('lose', 1);
+
     // LOGRO: Kamikaze (Acumular 50 muertes)
     if (Storage.stats.bombsExploded >= 50) Storage.unlockAchievement("boom_collector", "💥 Kamikaze");
 
-    let cat = state.isBlitz ? "blitz" : (state.SIZE === 8 ? "easy" : "other");
-    Storage.saveToHistory({ cat, seconds: state.seconds, win: false });
+    Storage.saveToHistory({ cat: state.currentMode || 'other', seconds: state.seconds, win: false });
 
+    // Revelar minas (la que explotó primero aparece primero)
     const mines = [];
     for (let x = 0; x < state.SIZE; x++) {
         for (let y = 0; y < state.SIZE; y++) {
             if (state.board[x][y] === "💣") {
-                if (x === hitX && y === hitY) mines.unshift({x, y});
-                else mines.push({x, y});
+                if (x === hitX && y === hitY) mines.unshift({ x, y });
+                else mines.push({ x, y });
             }
         }
     }
 
     mines.forEach((m, i) => {
         setTimeout(() => {
-            const index = m.x * state.SIZE + m.y;
-            const cell = state.cellsDOM[index];
-            if (cell) {
-                cell.classList.add('revealed', 'bomb-explosion');
-                cell.textContent = UI.getMineIcon(); 
-            }
+            // Usamos UI.renderCell para asegurar color/effects consistentes
+            UI.renderCell(m.x, m.y, "💣");
             if (i === 0) UI.playSound('boom');
             if (i === mines.length - 1) {
                 setTimeout(() => UI.showLose(), 800);
             }
-        }, i * 110); 
+        }, i * 110);
     });
 }

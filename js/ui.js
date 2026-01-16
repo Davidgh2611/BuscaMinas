@@ -78,7 +78,7 @@ export function renderAchievements() {
 }
 
 // --- NOTIFICACIONES ---
-export function showAchievementNotification(name) {
+export async function showAchievementNotification(name) {
     const oldNotif = document.querySelector('.achievement-notification');
     if (oldNotif) oldNotif.remove();
 
@@ -92,13 +92,20 @@ export function showAchievementNotification(name) {
         </div>
     `;
     document.body.appendChild(notif);
+
+    // Animación de entrada
+    requestAnimationFrame(() => notif.classList.add('show'));
+
+    // Sonido de logro
     playSound('click');
 
+    // Desaparecer automáticamente
     setTimeout(() => {
-        notif.style.transform = 'translateX(150%)';
+        notif.classList.remove('show');
         setTimeout(() => notif.remove(), 500);
     }, 4000);
 }
+
 
 // --- RANKINGS Y ESTADÍSTICAS ---
 export async function renderGlobalRank(cat = 'easy') {
@@ -201,17 +208,24 @@ export function renderCell(x, y, value) {
     const index = x * state.SIZE + y;
     const cell = state.cellsDOM[index];
     if (!cell) return;
+
     cell.classList.add("revealed");
+
     if (value === "💣") {
-        cell.textContent = getMineIcon();
+        cell.textContent = "💣";           // Bombas siempre
+        cell.style.color = "#ff4444";      // Fuerza rojo en todas
         cell.classList.add('bomb-explosion');
         spawnParticles(cell.getBoundingClientRect(), "#ff4444", 12);
         screenShake();
     } else {
         cell.textContent = value || "";
+        cell.style.color = "";              // Reset color normal
         if (value > 0) cell.classList.add("n" + value);
     }
 }
+
+
+
 
 // --- EFECTOS VISUALES ---
 function screenShake() {
@@ -349,19 +363,34 @@ export function showDuelHeader(active) {
 }
 
 export function runReplay() {
+    // Ocultamos todos los modales
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-    state.cellsDOM.forEach(cell => { cell.textContent = ""; cell.className = "cell"; });
+
+    // Reiniciamos todas las celdas
+    state.cellsDOM.forEach(cell => { 
+        cell.textContent = ""; 
+        cell.className = "cell"; 
+        cell.style.color = ""; // Reset color
+    });
+
+    // Reproducimos el historial de movimientos
     state.history.forEach((move, index) => {
         setTimeout(() => {
             const cell = state.cellsDOM[move.x * state.SIZE + move.y];
+            if (!cell) return;
+
             if (move.type === 'reveal') {
                 cell.classList.add('revealed');
                 const val = state.board[move.x][move.y];
+
                 if (val === "💣") {
-                    cell.textContent = getMineIcon();
+                    cell.textContent = "💣";         // Bombas siempre rojas
+                    cell.style.color = "#ff4444";    // Color rojo
                     cell.classList.add('bomb-explosion');
+                    spawnParticles(cell.getBoundingClientRect(), "#ff4444", 12);
                 } else {
                     cell.textContent = val === 0 ? "" : val;
+                    cell.style.color = "";           // Reset color normal
                     if(val > 0) cell.classList.add("n" + val);
                 }
             } else if (move.type === 'flag') {
