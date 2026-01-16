@@ -94,12 +94,15 @@ function reveal(x, y) {
         return; 
     }
     
-    if (state.board[x][y] === 0 && !state.expert) {
+    // EXPANSIÓN AUTOMÁTICA (Lógica de Buscaminas Real)
+    // Se eliminó '&& !state.expert' para que funcione siempre que el valor sea 0
+    if (state.board[x][y] === 0) {
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
                 let nx = x + dx, ny = y + dy;
                 if (nx >= 0 && nx < state.SIZE && ny >= 0 && ny < state.SIZE) {
                     if (!state.revealed[nx][ny]) {
+                        // Guardamos en el historial para replays/stats
                         state.history.push({ x: nx, y: ny, type: 'reveal' });
                         reveal(nx, ny);
                     }

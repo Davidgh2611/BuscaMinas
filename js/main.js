@@ -12,31 +12,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.onclick = fn;
     };
 
-    // Función para bloquear/desbloquear el acceso al juego y mostrar el menú principal
+    // Función para bloquear/desbloquear el acceso visual
     const setGameLock = (locked) => {
-        const gameMenu = document.getElementById('main-game-menu');
         const targets = ['.difficulty-group', '.meta-buttons', '#duel-setup'];
-        
-        if (locked) {
-            if (gameMenu) gameMenu.style.display = 'none';
-            targets.forEach(selector => {
-                const el = document.querySelector(selector);
-                if (el) el.classList.add('game-locked');
-            });
-        } else {
-            if (gameMenu) {
-                gameMenu.style.display = 'block';
-                gameMenu.style.opacity = '1';
+        targets.forEach(selector => {
+            const el = document.querySelector(selector);
+            if (el) {
+                locked ? el.classList.add('game-locked') : el.classList.remove('game-locked');
             }
-            targets.forEach(selector => {
-                const el = document.querySelector(selector);
-                if (el) el.classList.remove('game-locked');
-            });
+        });
+    };
+
+    // --- GESTOR DE INTERFAZ CENTRALIZADO (Solución definitiva F5 / Shift+F5) ---
+    const refreshUIState = () => {
+        const savedUser = localStorage.getItem("session_user");
+        const isGuest = localStorage.getItem("is_guest") === "true";
+        
+        const loggedOutDiv = document.getElementById('auth-logged-out');
+        const loggedInDiv = document.getElementById('auth-logged-in');
+        const gameMenu = document.getElementById('main-game-menu');
+        const displayUserEl = document.getElementById('display-username');
+
+        // Si los elementos críticos no existen aún (carga lenta), reintentamos brevemente
+        if (!loggedOutDiv || !gameMenu) {
+            setTimeout(refreshUIState, 30);
+            return;
+        }
+
+        if (savedUser || isGuest) {
+            // ESTADO: SESIÓN ACTIVA
+            state.playerName = savedUser || "Invitado (Local)";
+            
+            loggedOutDiv.style.display = 'none';
+            loggedInDiv.style.display = 'block';
+            
+            // Forzamos la visibilidad del menú
+            gameMenu.style.display = 'block'; 
+            gameMenu.style.opacity = '1';
+            
+            if (displayUserEl) displayUserEl.textContent = state.playerName;
+            setGameLock(false);
+            console.log("🔄 Sesión sincronizada:", state.playerName);
+        } else {
+            // ESTADO: REQUIERE LOGIN
+            loggedOutDiv.style.display = 'block';
+            loggedInDiv.style.display = 'none';
+            
+            // OCULTAMOS EL MENÚ COMPLETAMENTE (Evita que se vea de fondo bloqueado)
+            gameMenu.style.display = 'none'; 
+            
+            setGameLock(true);
         }
     };
 
-    // Bloquear al inicio hasta que elija una opción
-    setGameLock(true);
+    // Lanzar la restauración de interfaz inmediatamente
+    refreshUIState();
 
     // --- SISTEMA DE AUTENTICACIÓN ---
     
@@ -60,20 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const userData = await DB.loginUser(u, p);
-            
-            // Sincronización de estado global
             state.playerName = userData.username;
+            localStorage.setItem("session_user", userData.username);
+            localStorage.removeItem("is_guest");
             
-            // Si el login provee stats/logros, los cargamos
             if (userData.achievements && userData.stats) {
                 Storage.setCloudData(userData.achievements, userData.stats);
             }
             
-            document.getElementById('auth-logged-out').style.display = 'none';
-            document.getElementById('auth-logged-in').style.display = 'block';
-            document.getElementById('display-username').textContent = userData.username;
-            
-            setGameLock(false); 
+            refreshUIState(); // Actualizamos la vista tras login exitoso
             console.log("🔓 Sesión iniciada para: " + userData.username);
         } catch (e) {
             alert("❌ " + e.message);
@@ -82,16 +107,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     bind('btn-guest', () => {
         state.playerName = "Invitado (Local)"; 
-        document.getElementById('auth-logged-out').style.display = 'none';
-        document.getElementById('auth-logged-in').style.display = 'block';
-        document.getElementById('display-username').textContent = state.playerName;
-        
-        setGameLock(false); 
-        console.log("Modo invitado: Los datos se guardarán bajo el nombre 'Invitado'.");
+        localStorage.setItem("is_guest", "true");
+        localStorage.removeItem("session_user");
+        refreshUIState();
+        console.log("Modo invitado activo.");
     });
 
     bind('btn-logout', () => {
         if(confirm("¿Cerrar sesión? Los datos locales se limpiarán.")) {
+            localStorage.removeItem("session_user");
+            localStorage.removeItem("is_guest");
             localStorage.removeItem("achievements");
             localStorage.removeItem("stats");
             localStorage.removeItem("rankings");
@@ -100,17 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- SISTEMA DE TEMAS (DESPLEGABLE CON PREVIEW) ---
+    // --- SISTEMA DE TEMAS ---
     const skinSelect = document.getElementById('skin-select');
     const themeSample = document.getElementById('theme-sample');
-
     const themeColors = {
-        moderno: '#3498db',
-        winter: '#ffffff',
-        halloween: '#ff6600',
-        cyberpunk: '#ffcc00',
-        clasico: '#bdbdbd',
-        minimal: '#333333'
+        moderno: '#3498db', winter: '#ffffff', halloween: '#ff6600',
+        cyberpunk: '#ffcc00', clasico: '#bdbdbd', minimal: '#333333'
     };
 
     const updateThemePreview = (skin) => {
@@ -124,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
         skinSelect.value = currentSkin;
         UI.setSkin(currentSkin);
         updateThemePreview(currentSkin);
-
         skinSelect.onchange = (e) => {
             const selectedSkin = e.target.value;
             UI.setSkin(selectedSkin);
@@ -132,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- DIFICULTADES ---
+    // --- DIFICULTADES Y MODOS ---
     const startNormalGame = (s, m, e, modeName) => {
         state.isBlitz = false;
         state.isDuel = false;
@@ -156,27 +175,30 @@ document.addEventListener('DOMContentLoaded', () => {
     bind('btn-home-game', () => UI.showScreen('menu'));
 
     bind('btn-ranking-global', () => {
-        document.getElementById('globalRankModal').style.display = 'flex';
+        const modal = document.getElementById('globalRankModal');
+        if (modal) modal.style.display = 'flex';
         UI.renderGlobalRank('easy'); 
     });
 
-    // --- MODO DUELO (SALA Y LINKS) ---
+    // --- MODO DUELO ---
     bind('btn-create-duel', () => {
         const roomId = Math.random().toString(36).substring(2, 8);
         const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
         const input = document.getElementById('duel-url');
-        input.value = inviteUrl;
-        document.getElementById('duel-link-container').style.display = 'block';
+        if (input) input.value = inviteUrl;
+        const container = document.getElementById('duel-link-container');
+        if (container) container.style.display = 'block';
     });
 
     bind('btn-copy-link', () => {
         const copyText = document.getElementById('duel-url');
-        copyText.select();
-        navigator.clipboard.writeText(copyText.value);
-        alert("¡Link de duelo copiado!");
+        if (copyText) {
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            alert("¡Link de duelo copiado!");
+        }
     });
 
-    // --- DETECTAR SALA DE DUELO AL CARGAR ---
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('room');
 
@@ -184,8 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
         state.isDuel = true;
         state.roomID = room;
         state.currentMode = 'duel'; 
-        document.getElementById('duel-header').style.display = 'flex';
-        document.getElementById('duel-chat').style.display = 'flex';
+        const duelHeader = document.getElementById('duel-header');
+        const duelChat = document.getElementById('duel-chat');
+        if (duelHeader) duelHeader.style.display = 'flex';
+        if (duelChat) duelChat.style.display = 'flex';
         setGameLock(false);
         
         DB.joinDuel(room, (msg) => {
@@ -197,20 +221,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 UI.showReaction(msg.text);
             }
         });
-        
         Game.startGame(12, 25, false);
     }
 
     // --- MODO PERSONALIZADO ---
-    bind('btn-custom', () => document.getElementById('customModal').style.display = 'flex');
+    bind('btn-custom', () => {
+        const modal = document.getElementById('customModal');
+        if (modal) modal.style.display = 'flex';
+    });
     bind('btn-start-custom', () => {
-        const size = parseInt(document.getElementById('custom-size').value);
-        const mines = parseInt(document.getElementById('custom-mines').value);
-        if (size >= 8 && size <= 30 && mines < size * size) {
-            document.getElementById('customModal').style.display = 'none';
-            state.isBlitz = false;
-            state.currentMode = 'custom'; 
-            Game.startGame(size, mines, false);
+        const sizeInput = document.getElementById('custom-size');
+        const minesInput = document.getElementById('custom-mines');
+        if (sizeInput && minesInput) {
+            const size = parseInt(sizeInput.value);
+            const mines = parseInt(minesInput.value);
+            if (size >= 8 && size <= 30 && mines < size * size) {
+                const modal = document.getElementById('customModal');
+                if (modal) modal.style.display = 'none';
+                state.isBlitz = false;
+                state.currentMode = 'custom'; 
+                Game.startGame(size, mines, false);
+            }
         }
     });
 
@@ -235,7 +266,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.querySelectorAll('.close-modal-btn').forEach(btn => {
-        btn.onclick = () => btn.closest('.modal').style.display = 'none';
+        btn.onclick = () => {
+            const modal = btn.closest('.modal');
+            if (modal) modal.style.display = 'none';
+        };
     });
 
     window.UI = UI;
