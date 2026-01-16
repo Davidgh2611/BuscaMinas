@@ -57,6 +57,22 @@ body {
     overflow-x: hidden;
 }
 
+/* --- CONTROL DE VISIBILIDAD CRÍTICO --- */
+/* Ocultamos todo por defecto para que el JS decida qué mostrar sin parpadeos */
+#main-game-menu, 
+#auth-logged-out, 
+#auth-logged-in, 
+#gameUI {
+    display: none;
+}
+
+/* Clase de bloqueo para cuando el menú sea visible pero el usuario no tenga acceso */
+.game-locked {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(0.8) blur(1px);
+}
+
 .screen {
     text-align: center;
     display: flex;
@@ -64,23 +80,17 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 10px 0; /* Reducido para ahorrar espacio */
+    padding: 10px 0;
 }
 
 /* Contenedor Grid para evitar que la página sea muy larga */
 .menu-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Dos columnas */
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     width: 95%;
     max-width: 900px;
     margin: 0 auto;
-}
-
-#gameUI {
-    display: none;
-    gap: 15px;
-    padding: 20px;
 }
 
 /* =========================================
@@ -305,7 +315,7 @@ button:disabled {
 .ranking-table, #historyTable {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0 5px; /* Crea espacio entre filas para el efecto de tarjeta */
+    border-spacing: 0 5px;
     margin-top: 10px;
 }
 
@@ -326,11 +336,9 @@ button:disabled {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Bordes redondeados para el efecto de fila-tarjeta */
 .ranking-table td:first-child, #historyTable td:first-child { border-radius: 10px 0 0 10px; border-left: 1px solid rgba(255, 255, 255, 0.05); }
 .ranking-table td:last-child, #historyTable td:last-child { border-radius: 0 10px 10px 0; border-right: 1px solid rgba(255, 255, 255, 0.05); }
 
-/* Colores para Historial */
 .res-victoria { color: #00ff88; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,136,0.3); }
 .res-derrota { color: #ff4444; opacity: 0.8; }
 
@@ -407,7 +415,9 @@ button:disabled {
     background: rgba(255, 204, 0, 0.1);
 }
 
-/* Duelo */
+/* =========================================
+   10. DUELO Y REACCIONES
+   ========================================= */
 #duel-header {
     background: linear-gradient(90deg, rgba(0,255,255,0.2) 0%, rgba(255,0,255,0.2) 100%);
     border: 1px solid #0ff;
@@ -444,10 +454,12 @@ button:disabled {
     100% { transform: scale(0.8) translateY(-50px); opacity: 0; }
 }
 
-/* Adaptación móvil mejorada */
+/* =========================================
+   11. ADAPTACIÓN MÓVIL
+   ========================================= */
 @media (max-width: 768px) {
     .menu-grid {
-        grid-template-columns: 1fr; /* Una columna en tablets/móviles */
+        grid-template-columns: 1fr;
         gap: 10px;
     }
 }
